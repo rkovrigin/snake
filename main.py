@@ -1,6 +1,7 @@
 import curses
 from curses import KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN
 from time import sleep
+from snake import Snake
 
 from map import Map
 
@@ -14,9 +15,9 @@ def main(stdscr):
     # do not wait for input when calling getch
     stdscr.nodelay(1)
 
-    map = Map(X, Y)
-    map[X//2, Y//2] = BODY
     key = KEY_RIGHT
+
+    snake = Snake(X//2, Y//2)
 
     while True:
         # get keyboard input, returns -1 if none available
@@ -24,18 +25,10 @@ def main(stdscr):
         if c != -1:
             # print numeric value
             text = ' '
-            if c == KEY_RIGHT:
-                text = "right"
-            elif c == KEY_LEFT:
-                text = "left"
-            elif c == KEY_DOWN:
-                text = "down"
-            elif c == KEY_UP:
-                text = "up"
-            elif c == ESC:
-                break
 
-            stdscr.addstr(str(c) + ' ' + text + '   ')
+            snake.move(c)
+
+            stdscr.addstr(str(c) + ' ' + str(len(snake)))
             stdscr.refresh()
             stdscr.move(0, 0)
 
