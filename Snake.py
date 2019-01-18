@@ -40,22 +40,22 @@ class Snake(object):
         if direction not in [KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT]:
             return
 
+        head = Cell(self.body[len(self)-1].x, self.body[len(self)-1].y)
         if self.grow_from_fruit == 0:
-            for i in range(len(self.body)-1):
-                self.body[i].x = self.body[i + 1].x
-                self.body[i].y = self.body[i + 1].y
+            self.body.pop(0)
         else:
-            self.body.append(Cell(self.body[len(self.body)-1].x, self.body[len(self.body)-1].y))
             self.grow_from_fruit -= 1
 
         if direction == KEY_RIGHT:
-            self.body[len(self.body)-1].x += 1
+            head.x += 1
         elif direction == KEY_LEFT:
-            self.body[len(self.body)-1].x -= 1
+            head.x -= 1
         elif direction == KEY_UP:
-            self.body[len(self.body)-1].y -= 1
+            head.y -= 1
         elif direction == KEY_DOWN:
-            self.body[len(self.body)-1].y += 1
+            head.y += 1
+
+        self.body.append(head)
 
         print(self.body[len(self.body)-1].x, self.body[len(self.body)-1].y)
 

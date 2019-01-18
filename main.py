@@ -3,8 +3,6 @@ from curses import KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN
 from time import sleep
 from Snake import Snake
 
-from map import Map
-
 ESC = 27
 X = 40
 Y = 40
