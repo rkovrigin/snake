@@ -14,6 +14,7 @@ class Snake(object):
         self.body = list()
         self.body.append(Cell(x, y))
         self.grow_from_fruit = 0
+        self.current_direction = None
 
     def eat_fruit(self):
         self.grow_from_fruit += 2
@@ -36,11 +37,15 @@ class Snake(object):
         if direction not in [KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT]:
             return
 
+
+        self.current_direction = direction
+
         if self.grow_from_fruit == 0:
             for i in range(len(self.body)-1):
                 self.body[i] = self.body[i+1]
         else:
             self.body.append(self.body[len(self.body)-1])
+            self.grow_from_fruit -= 1
 
         if direction == KEY_RIGHT:
             self.body[len(self.body)-1].x += 1
