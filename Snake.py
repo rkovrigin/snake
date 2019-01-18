@@ -20,7 +20,6 @@ class Snake(object):
 
     def check_crash(self, X, Y):
         head = self.body[len(self.body)-1]
-        print(head.x, head.y)
 
         if head.x < 0 or head.x >= X:
             return False
@@ -34,7 +33,7 @@ class Snake(object):
         return True
 
     def move(self, direction=None):
-        if not direction or direction not in [KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT]:
+        if direction not in [KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT]:
             return
 
         if self.grow_from_fruit == 0:
@@ -50,7 +49,7 @@ class Snake(object):
         elif direction == KEY_UP:
             self.body[len(self.body)-1].y -= 1
         elif direction == KEY_DOWN:
-            self.body[len(self.body)-1].x += 1
+            self.body[len(self.body)-1].y += 1
 
         print(self.body[len(self.body)-1].x, self.body[len(self.body)-1].y)
 
