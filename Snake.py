@@ -13,8 +13,7 @@ class Snake(object):
     def __init__(self, x, y):
         self.body = list()
         self.body.append(Cell(x, y))
-        self.grow_from_fruit = 0
-        self.current_direction = None
+        self.grow_from_fruit = 100
 
     def eat_fruit(self):
         self.grow_from_fruit += 2
@@ -22,13 +21,17 @@ class Snake(object):
     def check_crash(self, X, Y):
         head = self.body[len(self.body)-1]
 
+        if len(self) == 1:
+            return True
+
         if head.x < 0 or head.x >= X:
             return False
         if head.y < 0 or head.y >= Y:
             return False
 
-        for i in range(len(self.body)-2):
-            if head.x == self.body[i].x or head.y == self.body[i].y:
+        for i in range(len(self.body)-1):
+            if head.x == self.body[i].x and head.y == self.body[i].y:
+                print(i, ' ', head.x, head.y, " == ", self.body[i].x, self.body[i].y)
                 return False
 
         return True
@@ -37,14 +40,12 @@ class Snake(object):
         if direction not in [KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT]:
             return
 
-
-        self.current_direction = direction
-
         if self.grow_from_fruit == 0:
             for i in range(len(self.body)-1):
-                self.body[i] = self.body[i+1]
+                self.body[i].x = self.body[i + 1].x
+                self.body[i].y = self.body[i + 1].y
         else:
-            self.body.append(self.body[len(self.body)-1])
+            self.body.append(Cell(self.body[len(self.body)-1].x, self.body[len(self.body)-1].y))
             self.grow_from_fruit -= 1
 
         if direction == KEY_RIGHT:
