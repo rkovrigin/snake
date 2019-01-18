@@ -1,7 +1,7 @@
 import curses
 from curses import KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN
 from time import sleep
-from snake import Snake
+from Snake import Snake
 
 from map import Map
 
@@ -25,7 +25,8 @@ def main(stdscr):
         if c != -1:
             # print numeric value
             text = ' '
-
+            if c == 27:
+                break
             snake.move(c)
 
             stdscr.addstr(str(c) + ' ' + str(len(snake)))
