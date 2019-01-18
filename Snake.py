@@ -20,6 +20,7 @@ class Snake(object):
 
     def check_crash(self, X, Y):
         head = self.body[len(self.body)-1]
+        print(head.x, head.y)
 
         if head.x < 0 or head.x >= X:
             return False
@@ -50,6 +51,8 @@ class Snake(object):
             self.body[len(self.body)-1].y -= 1
         elif direction == KEY_DOWN:
             self.body[len(self.body)-1].x += 1
+
+        print(self.body[len(self.body)-1].x, self.body[len(self.body)-1].y)
 
     def __len__(self):
         return len(self.body)
