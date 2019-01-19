@@ -1,9 +1,11 @@
 import sys
 import time
+from random import randrange
+
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QSurfaceFormat
 from PyQt5.QtWidgets import QApplication, QGridLayout, QLabel, QOpenGLWidget, QWidget
-from Snake import Snake
+from Snake import Snake, Cell
 
 
 class GLWidget(QOpenGLWidget):
@@ -19,8 +21,6 @@ class GLWidget(QOpenGLWidget):
         self.setAutoFillBackground(False)
         self.background = QBrush(QColor(255, 255, 255))
         self._members = None
-        self._click_x = None
-        self._click_y = None
         self.painter = QPainter()
         self.painterImg = QPainter()
         self.count = 0
@@ -60,21 +60,34 @@ class Window(QWidget):
         self.startTimer(self.timer)
         self.x = x
         self.y = y
+
+
+class SnakeGame(Window):
+    def __init__(self, x, y, scale=5):
         self.snake = Snake(x//2, y//2)
+        self.fruit = None
+        super(SnakeGame, self).__init__(x, y, scale)
 
     def keyPressEvent(self, event):
         self.key = event.key()
+
+    def set_fruit(self):
+        if not self.fruit:
+            self.fruit = Cell(randrange(self.x), randrange(self.y))
+            while self.fruit in self.snake:
+                self.fruit = Cell(randrange(self.x), randrange(self.y))
+
 
     def timerEvent(self, event):
         self.snake.move(self.key)
         if self.snake.collapse(x, y):
             self.setWindowTitle("Game over")
             self.snake = Snake(self.x//2, self.y//2)
+            self.set_fruit()
             self.key = None
             time.sleep(1)
             self.setWindowTitle("Snake")
-        self.openGL.animate([cell for cell in self.snake])
-
+        self.openGL.animate([cell for cell in self.snake].append(self.fruit))
 
 if __name__ == '__main__':
 
@@ -85,7 +98,7 @@ if __name__ == '__main__':
     QSurfaceFormat.setDefaultFormat(fmt)
     x = 60
     y = 40
-    window = Window(x, y)
+    window = SnakeGame(x, y)
     window.show()
 
     sys.exit(app.exec_())
