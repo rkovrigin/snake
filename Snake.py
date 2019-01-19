@@ -9,21 +9,22 @@ KEY_DOWN = Qt.Key_Down
 
 class Cell(object):
 
-    def __init__(self, x, y):
+    def __init__(self, x, y, color):
         self.x = x
         self.y = y
+        self.color = color
 
 
 class Snake(object):
 
     def __init__(self, x, y):
         self.body = list()
-        self.body.append(Cell(x, y))
+        self.body.append(Cell(x, y, Qt.green))
         self.grow_from_fruit = 10
         self.current_key = None
 
     def __iter__(self):
-        return (i for i in self.body)
+        return (cell for cell in self.body)
 
     def eat_fruit(self):
         self.grow_from_fruit += 2
@@ -41,9 +42,15 @@ class Snake(object):
 
         for i in range(len(self.body)-2):
             if head.x == self.body[i].x and head.y == self.body[i].y:
-                print(i, ' ', head.x, head.y, " == ", self.body[i].x, self.body[i].y)
                 return True
 
+        return False
+
+    def check_fruit(self, fruit):
+        head = self.body[len(self.body)-1]
+        if head.x == fruit.x and head.y == fruit.y:
+            self.eat_fruit()
+            return True
         return False
 
     def move(self, key=None):
@@ -56,7 +63,7 @@ class Snake(object):
                 key == KEY_RIGHT and self.current_key != KEY_LEFT:
             self.current_key = key
 
-        head = Cell(self.body[len(self) - 1].x, self.body[len(self) - 1].y)
+        head = Cell(self.body[len(self) - 1].x, self.body[len(self) - 1].y, Qt.green)
 
         if self.grow_from_fruit == 0:
             self.body.pop(0)
