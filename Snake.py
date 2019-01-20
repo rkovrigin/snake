@@ -9,46 +9,55 @@ KEY_DOWN = Qt.Key_Down
 
 class Cell(object):
 
-    def __init__(self, x, y, color):
+    def __init__(self, x, y):
         self.x = x
         self.y = y
-        self.color = color
+
+    def __eq__(self, other):
+        return self.x == other.x and self.y == other.y
 
 
 class Snake(object):
 
     def __init__(self, x, y, start_length=2):
         self.body = list()
-        self.body.append(Cell(x, y, Qt.green))
+        self.body.append(Cell(x, y))
         self.grow_from_fruit = start_length - 1
         self.current_key = None
 
     def __iter__(self):
         return (cell for cell in self.body)
 
+    def __len__(self):
+        return len(self.body)
+
+    def __contains__(self, item):
+        return item in self.body
+
+    @property
+    def head(self):
+        return self.body[len(self.body)-1]
+
     def eat_fruit(self):
         self.grow_from_fruit += 2
 
     def collapse(self, X, Y):
-        head = self.body[len(self.body)-1]
-
         if len(self) == 1:
             return False
 
-        if head.x < 0 or head.x >= X:
+        if self.head.x < 0 or self.head.x >= X:
             return True
-        if head.y < 0 or head.y >= Y:
+        if self.head.y < 0 or self.head.y >= Y:
             return True
 
         for i in range(len(self.body)-2):
-            if head.x == self.body[i].x and head.y == self.body[i].y:
+            if self.head.x == self.body[i].x and self.head.y == self.body[i].y:
                 return True
 
         return False
 
     def check_fruit(self, fruit):
-        head = self.body[len(self.body)-1]
-        if head.x == fruit.x and head.y == fruit.y:
+        if self.head.x == fruit.x and self.head.y == fruit.y:
             self.eat_fruit()
             return True
         return False
@@ -63,7 +72,7 @@ class Snake(object):
                 key == KEY_RIGHT and self.current_key != KEY_LEFT:
             self.current_key = key
 
-        head = Cell(self.body[len(self) - 1].x, self.body[len(self) - 1].y, Qt.green)
+        new_head = Cell(self.head.x, self.head.y)
 
         if self.grow_from_fruit == 0:
             self.body.pop(0)
@@ -71,18 +80,12 @@ class Snake(object):
             self.grow_from_fruit -= 1
 
         if self.current_key == KEY_RIGHT:
-            head.x += 1
+            new_head.x += 1
         elif self.current_key == KEY_LEFT:
-            head.x -= 1
+            new_head.x -= 1
         elif self.current_key == KEY_UP:
-            head.y -= 1
+            new_head.y -= 1
         elif self.current_key == KEY_DOWN:
-            head.y += 1
+            new_head.y += 1
 
-        self.body.append(head)
-
-        print(head.x, head.y)
-
-    def __len__(self):
-        return len(self.body)
-
+        self.body.append(new_head)
