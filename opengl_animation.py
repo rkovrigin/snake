@@ -58,9 +58,9 @@ class Window(QWidget):
         self.setLayout(layout)
         self.key = None
         self.timer = 200
-        self.startTimer(self.timer)
         self.x = x
         self.y = y
+        self.timer_id = self.startTimer(self.timer)
 
 
 class SnakeGame(Window):
@@ -78,7 +78,6 @@ class SnakeGame(Window):
         while not self.fruit:
             self.fruit = Cell(randrange(0, self.x), randrange(0, self.y), Qt.red)
             for cell in self.snake:
-                print("[%d : %d], [%d : %d]" % (cell.x, cell.y, self.fruit.x, self.fruit.y))
                 if cell.x == self.fruit.x and cell.y == self.fruit.y:
                     self.fruit = None
                     break
@@ -91,10 +90,20 @@ class SnakeGame(Window):
             self.snake = Snake(self.x//2, self.y//2)
             self.set_fruit()
             self.key = None
-            time.sleep(1)
+
+            time.sleep(2)
+
             self.setWindowTitle("Snake")
+            self.killTimer(self.timer_id)
+            self.timer = 200
+            self.timer_id = self.startTimer(self.timer)
+
         if self.snake.check_fruit(self.fruit):
             self.set_fruit()
+            self.killTimer(self.timer_id)
+            self.timer = max(50, self.timer - 20)
+            self.timer_id = self.startTimer(self.timer)
+
         cells = [cell for cell in self.snake]
         cells.append(self.fruit)
         self.openGL.animate(cells)
@@ -106,8 +115,8 @@ if __name__ == '__main__':
     fmt = QSurfaceFormat()
     fmt.setSamples(1)
     QSurfaceFormat.setDefaultFormat(fmt)
-    x = 10
-    y = 10
+    x = 50
+    y = 20
     window = SnakeGame(x, y)
     window.show()
 
