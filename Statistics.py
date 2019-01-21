@@ -6,12 +6,14 @@ BODY = 2
 EMPTY = 0
 FRUIT = 100
 
+
 class Statistic(object):
 
     def __init__(self, view_range=5):
         self.data = list()
-        self.view_range = 5
+        self.view_range = view_range
 
+    # TODO: delete the last line from snapshot before save this data to a file
     def snapshot(self, snake, fruit, x, y):
         head = snake.head
         snapshot = list()
