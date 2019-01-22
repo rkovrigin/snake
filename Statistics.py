@@ -1,5 +1,8 @@
+import os
+
 from PyQt5.QtCore import Qt
 from Snake import Cell
+from pathlib import Path
 
 WALL = 1
 BODY = 2
@@ -30,6 +33,8 @@ class Statistic(object):
                 else:
                     snapshot.append(EMPTY)
 
+        snapshot.append(len(snake))
+
         if snake.current_key == Qt.Key_Right:
             snapshot.extend([1, 0, 0, 0])
         elif snake.current_key == Qt.Key_Left:
@@ -39,7 +44,13 @@ class Statistic(object):
         elif snake.current_key == Qt.Key_Down:
             snapshot.extend([0, 0, 0, 1])
 
-        snapshot.append(len(snake))
-
-        print(snapshot)
+        print(snapshot[:-4], '   ', snapshot[-4:])
         self.data.append(snapshot)
+
+    def save(self, file_name="learning.txt"):
+        f = open(file_name, "a+")
+        self.data.pop() # remove last line where snake meets the wall
+        for snapshot in self.data:
+            f.write(str(snapshot)[1:-1] + '\n')
+        f.close()
+        self.data.clear()

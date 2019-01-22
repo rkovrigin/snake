@@ -95,6 +95,7 @@ class SnakeGame(Window):
             self.setWindowTitle("Game over")
             self.killTimer(self.timer_id)
             self.run = False
+            self.statistic.save()
 
             time.sleep(2)
 
@@ -107,7 +108,7 @@ class SnakeGame(Window):
         if self.snake.check_fruit(self.fruit):
             self.set_fruit()
             self.killTimer(self.timer_id)
-            # self.timer = max(50, self.timer - 20)
+            self.timer = max(40, self.timer - 10)
             self.timer_id = self.startTimer(self.timer)
 
         if self.run:
