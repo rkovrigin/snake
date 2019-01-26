@@ -7,6 +7,8 @@ class LogisticRegression(object):
     def __init__(self, file_name=""):
         self.X = None
         self.Y = None
+        self.theta = None
+        self.classes = 4
 
         if os.path.exists(file_name):
             x_data = list()
@@ -18,6 +20,10 @@ class LogisticRegression(object):
 
             self.X = np.asarray(x_data)
             self.Y = np.asarray(y_data)
+            self.theta = np.array((self.classes, len(x_data)))
+
+    def sigmoid(self, matrix):
+        return 1.0 / (1.0 + np.exp(matrix))
 
 
 
