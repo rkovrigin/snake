@@ -1,6 +1,7 @@
 import os
 import numpy as np
 import scipy.optimize as op
+import matplotlib.pyplot as plt
 
 
 def sigmoid(matrix):
@@ -9,20 +10,27 @@ def sigmoid(matrix):
 
 class LogisticRegression(object):
 
-    def __init__(self, file_name="", my_lambda=1):
+    def __init__(self, file_name="", my_lambda=0.1):
         self.X = None
         self.Y = None
         self.theta = None
         self.classes = 4
         self.my_lambda = my_lambda
+        self.cost_data = [[], [], [], []]
 
         if os.path.exists(file_name):
             x_data = list()
             y_data = list()
             f = open(file_name, "r+")
+            last = None
             for line in f:
+                # new_last = [int(i) for i in line.split(", ")][-4:].index(1)
+                # if new_last != last:
+                #     x_data.append([int(i) for i in line.split(", ")][:-5])
+                #     y_data.append([int(i) for i in line.split(", ")][-4:].index(1))
+                #     last = new_last
                 x_data.append([int(i) for i in line.split(", ")][:-5])
-                y_data.append([int(i) for i in line.split(", ")][-4:].index(1) + 1)
+                y_data.append([int(i) for i in line.split(", ")][-4:].index(1))
 
             self.X = np.asarray(x_data)
             self.Y = np.asarray(y_data)
@@ -33,7 +41,7 @@ class LogisticRegression(object):
             # print(self.Y.shape)
             # print(self.theta.shape)
 
-    def cost_function(self, initial_theta, X, y):
+    def cost_function(self, initial_theta, X, y, i):
         zero_theta = initial_theta.copy()
         zero_theta[0] = 0
         reg = (self.my_lambda * np.power(zero_theta, 2).sum())/2
@@ -47,25 +55,27 @@ class LogisticRegression(object):
 
         # grad = (X'*(sigmoid(X*theta) - y) + lambda*t_theta)/m;
         # grad = (np.matmul(np.transpose(X), np.subtract(sig, y)) + self.my_lambda * zero_theta) / self.m
+        self.cost_data[i].append(cost)
 
         return cost
 
-    def gradient(self, initial_theta, X, y):
+    def gradient(self, initial_theta, X, y, i):
         zero_theta = initial_theta.copy()
         zero_theta[0] = 0
         sig = sigmoid(np.matmul(X, initial_theta))
-        grad = (np.matmul(np.transpose(X), np.subtract(sig, y)) + self.my_lambda * zero_theta) / self.m
+        grad = (np.matmul(np.transpose(X), sig - y) + self.my_lambda * zero_theta) / self.m
+        # grad = (np.matmul(np.transpose(X), np.subtract(sig, y)) + self.my_lambda * zero_theta) / self.m
         # grad = (np.matmul(np.transpose(X), np.subtract(sig, y))) / self.m
 
         return grad
 
     def optimize(self, index):
         initial_theta = np.zeros(len(self.theta[index]))
-        y = self.Y == index + 1
+        y = self.Y == index
         y = y.astype(int)
         result = op.minimize(fun=self.cost_function,
                              x0=initial_theta,
-                            args=(self.X, y),
+                            args=(self.X, y, index),
                             method='TNC',
                             jac=self.gradient)
         print(result)
@@ -85,8 +95,12 @@ class LogisticRegression(object):
         return w.index(max(w))
 
 
-lr = LogisticRegression("learning_copy.txt")
-
-# print(lr.cost_function(3), "\n", lr.gradient(3))
-print(lr.optimize_thetas())
-lr.predict(np.asarray([0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0, 0, 0, 2, 0, 0]))
+# lr = LogisticRegression("learning2.txt")
+# print(lr.optimize_thetas())
+#
+# plt.plot(lr.cost_data[0])
+# plt.plot(lr.cost_data[1])
+# plt.plot(lr.cost_data[2])
+# plt.plot(lr.cost_data[3])
+# plt.ylabel('some numbers')
+# plt.show()

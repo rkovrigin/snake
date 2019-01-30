@@ -5,6 +5,8 @@ from random import randrange
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QSurfaceFormat
 from PyQt5.QtWidgets import QApplication, QGridLayout, QLabel, QOpenGLWidget, QWidget
+
+from LogisticRegression import LogisticRegression
 from Snake import Snake, Cell
 from Statistics import Statistic
 
@@ -71,12 +73,19 @@ class SnakeGame(Window):
         self.statistic = Statistic()
         self.set_fruit()
         self.run = False
+        self.lr = LogisticRegression("learning2.txt")
+        self.auto = True
+        if self.auto:
+            self.lr.optimize_thetas()
 
     def keyPressEvent(self, event):
-        self.key = event.key()
+        if not self.auto:
+            self.key = event.key()
 
     def set_fruit(self):
         self.fruit = None
+        # self.fruit = Cell(x//2-2, y//2-2)
+        # return
         while not self.fruit:
             self.fruit = Cell(randrange(0, self.x), randrange(0, self.y))
             for cell in self.snake:
@@ -88,6 +97,18 @@ class SnakeGame(Window):
         if not self.run and self.key:
             self.run = True
 
+        if self.auto:
+            move = self.lr.predict(self.statistic.get_overview(self.snake, self.fruit, self.x, self.y))
+
+            if move == 0:
+                self.key = Qt.Key_Right
+            elif move == 1:
+                self.key = Qt.Key_Left
+            elif move == 2:
+                self.key = Qt.Key_Up
+            elif move == 3:
+                self.key = Qt.Key_Down
+
         self.snake.move(self.key)
         if self.snake.collapse(x, y):
             self.fruit = None
@@ -95,7 +116,9 @@ class SnakeGame(Window):
             self.setWindowTitle("Game over")
             self.killTimer(self.timer_id)
             self.run = False
-            self.statistic.save()
+
+            if not self.auto:
+                self.statistic.save()
 
             time.sleep(2)
 
@@ -108,10 +131,10 @@ class SnakeGame(Window):
         if self.snake.check_fruit(self.fruit):
             self.set_fruit()
             self.killTimer(self.timer_id)
-            self.timer = max(40, self.timer - 10)
+            self.timer = max(80, self.timer - 10)
             self.timer_id = self.startTimer(self.timer)
 
-        if self.run:
+        if self.run and not self.auto:
             self.statistic.snapshot(self.snake, self.fruit, self.x, self.y)
 
         cells = [(cell.x, cell.y, Qt.green) for cell in self.snake]
