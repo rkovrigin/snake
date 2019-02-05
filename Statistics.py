@@ -122,9 +122,16 @@ class Statistic(object):
         if not file:
             file = self.output
 
+        snapshot = list()
+
         with open(file, "r") as input_file:
             for line in input_file:
-                print(line.split(";")[0])
+                snapshot.append(line.split(";"))
+
+        return snapshot
+
+    def prepare_data_1(self, x, y):
+        pass
 
     def get_overview(self, snake, fruit, x, y):
         head = snake.head
