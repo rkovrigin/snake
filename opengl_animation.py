@@ -73,13 +73,15 @@ class SnakeGame(Window):
         self.statistic = Statistic()
         self.set_fruit()
         self.run = False
-        self.lr = LogisticRegression("learning2.txt")
-        self.auto = True
+        self.lr = LogisticRegression("learning3.txt")
+        self.auto = False
+        self.key = None
+        self.prev_key = None
         if self.auto:
             self.lr.optimize_thetas()
 
     def keyPressEvent(self, event):
-        if not self.auto:
+        if not self.auto and self.fruit is not None:
             self.key = event.key()
 
     def set_fruit(self):
@@ -111,21 +113,23 @@ class SnakeGame(Window):
 
         self.snake.move(self.key)
         if self.snake.collapse(x, y):
-            self.fruit = None
-            self.key = None
-            self.setWindowTitle("Game over")
             self.killTimer(self.timer_id)
-            self.run = False
-
             if not self.auto:
                 self.statistic.save()
 
+            self.run = False
+            self.fruit = None
+            self.key = None
+            self.prev_key = None
+            self.setWindowTitle("Game over")
+
             time.sleep(2)
+
 
             self.setWindowTitle("Snake")
             self.snake = Snake(self.x // 2, self.y // 2)
             self.set_fruit()
-            self.timer = 200
+            self.timer = 100
             self.timer_id = self.startTimer(self.timer)
 
         if self.snake.check_fruit(self.fruit):
@@ -135,7 +139,10 @@ class SnakeGame(Window):
             self.timer_id = self.startTimer(self.timer)
 
         if self.run and not self.auto:
-            self.statistic.snapshot(self.snake, self.fruit, self.x, self.y)
+            # self.statistic.snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
+            self.statistic.take_snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
+
+        self.prev_key = self.key
 
         cells = [(cell.x, cell.y, Qt.green) for cell in self.snake]
         cells.append((self.fruit.x, self.fruit.y, Qt.red))
