@@ -24,7 +24,6 @@ class Snapshot(object):
         self.my_map = my_map
 
 
-
 class Statistic(object):
 
     def __init__(self, view_range=10, output="dump.txt"):
@@ -102,7 +101,7 @@ class Statistic(object):
         # elif snake.current_key == Qt.Key_Down:
         #     snapshot.extend([0, 0, 0, 1])
 
-    def take_snapshot(self, prev_key, snake, fruit, x, y):
+    def save_snapshot(self, prev_key, snake, fruit, x, y):
         my_map = np.zeros([x, y], dtype=int)
 
         for cell in snake:
@@ -115,10 +114,17 @@ class Statistic(object):
 
         try:
             with open(self.output, "a+") as output:
-                output.write("%d:%d:%s;%d;%d\n" % (x, y, [i[0] for i in my_map.reshape([x*y, 1]).tolist()], previous_direction, current_direction))
+                output.write("%d;%d;%s;%d;%d\n" % (x, y, [i[0] for i in my_map.reshape([x*y, 1]).tolist()], previous_direction, current_direction))
         except Exception as e:
             print(e)
 
+    def read_snapshots(self, file=None):
+        if not file:
+            file = self.output
+
+        with open(file, "r") as input_file:
+            for line in input_file:
+                print(line.split(";")[0])
 
     def get_overview(self, snake, fruit, x, y):
         head = snake.head
@@ -145,3 +151,6 @@ class Statistic(object):
             f.write(str(snapshot)[1:-1] + '\n')
         f.close()
         self.data.clear()
+
+st = Statistic()
+st.read_snapshots()

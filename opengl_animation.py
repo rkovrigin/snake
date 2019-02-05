@@ -140,7 +140,7 @@ class SnakeGame(Window):
 
         if self.run and not self.auto:
             # self.statistic.snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
-            self.statistic.take_snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
+            self.statistic.save_snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
 
         self.prev_key = self.key
 
