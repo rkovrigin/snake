@@ -118,20 +118,38 @@ class Statistic(object):
         except Exception as e:
             print(e)
 
-    def read_snapshots(self, file=None):
+    def read_snapshots(self, file=None, x=None, y=None):
         if not file:
             file = self.output
 
-        snapshot = list()
+        snapshots = list()
 
         with open(file, "r") as input_file:
             for line in input_file:
-                snapshot.append(line.split(";"))
+                parsed = line.split(";")
 
-        return snapshot
+                if not x:
+                    x = int(parsed[0])
+                if not y:
+                    y = int(parsed[1])
 
-    def prepare_data_1(self, x, y):
-        pass
+                if int(parsed[0]) == x and int(parsed[1]) == y:
+                    my_map = np.array([int(i) for i in parsed[2].strip("[]").split(', ')]).reshape((x, y))
+                    prev_direction = int(parsed[3])
+                    cur_direction = int(parsed[4])
+                    snapshot = {'x': x,
+                                'y': y,
+                                'map': my_map,
+                                'prev_direction': prev_direction,
+                                'cur_direction': cur_direction}
+                    snapshots.append(snapshot)
+
+        return snapshots
+
+    def prepare_data_1(self):
+        data = self.read_snapshots()
+        print(data[0]["map"])
+
 
     def get_overview(self, snake, fruit, x, y):
         head = snake.head
@@ -160,4 +178,4 @@ class Statistic(object):
         self.data.clear()
 
 st = Statistic()
-st.read_snapshots()
+st.prepare_data_1()

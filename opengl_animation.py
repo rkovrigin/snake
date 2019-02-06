@@ -10,6 +10,15 @@ from LogisticRegression import LogisticRegression
 from Snake import Snake, Cell
 from Statistics import Statistic
 
+KEYS = {
+    Qt.Key_Right : "RIGHT",
+    Qt.Key_Left : "LEFT",
+    Qt.Key_Up : "UP",
+    Qt.Key_Down : "DOWN",
+    None : "None"
+}
+
+DEFAULT_TIMER = 1000
 
 class GLWidget(QOpenGLWidget):
     def __init__(self, parent, x, y, scale):
@@ -59,7 +68,7 @@ class Window(QWidget):
         layout.addWidget(self.openGL)
         self.setLayout(layout)
         self.key = None
-        self.timer = 200
+        self.timer = DEFAULT_TIMER
         self.x = x
         self.y = y
         self.timer_id = self.startTimer(self.timer)
@@ -129,7 +138,7 @@ class SnakeGame(Window):
             self.setWindowTitle("Snake")
             self.snake = Snake(self.x // 2, self.y // 2)
             self.set_fruit()
-            self.timer = 100
+            self.timer = DEFAULT_TIMER
             self.timer_id = self.startTimer(self.timer)
 
         if self.snake.check_fruit(self.fruit):
@@ -141,6 +150,8 @@ class SnakeGame(Window):
         if self.run and not self.auto:
             # self.statistic.snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
             self.statistic.save_snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
+
+        print("Prev:[%s] Cur:[%s]" % (KEYS[self.prev_key], KEYS[self.key]))
 
         self.prev_key = self.key
 
