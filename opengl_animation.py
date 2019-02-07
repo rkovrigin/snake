@@ -1,5 +1,6 @@
 import sys
 import time
+from copy import copy
 from random import randrange
 
 from PyQt5.QtCore import Qt
@@ -8,17 +9,9 @@ from PyQt5.QtWidgets import QApplication, QGridLayout, QLabel, QOpenGLWidget, QW
 
 from LogisticRegression import LogisticRegression
 from Snake import Snake, Cell
-from Statistics import Statistic
+from Statistics import Statistic, KEYS
 
-KEYS = {
-    Qt.Key_Right : "RIGHT",
-    Qt.Key_Left : "LEFT",
-    Qt.Key_Up : "UP",
-    Qt.Key_Down : "DOWN",
-    None : "None"
-}
-
-DEFAULT_TIMER = 1000
+DEFAULT_TIMER = 200
 
 class GLWidget(QOpenGLWidget):
     def __init__(self, parent, x, y, scale):
@@ -120,6 +113,8 @@ class SnakeGame(Window):
             elif move == 3:
                 self.key = Qt.Key_Down
 
+        snake_copy = copy(self.snake)
+
         self.snake.move(self.key)
         if self.snake.collapse(x, y):
             self.killTimer(self.timer_id)
@@ -149,7 +144,12 @@ class SnakeGame(Window):
 
         if self.run and not self.auto:
             # self.statistic.snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
-            self.statistic.save_snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
+            self.statistic.save_snapshot(current_direction=self.prev_key,
+                                         next_direction=self.key,
+                                         snake=snake_copy,
+                                         fruit=self.fruit,
+                                         x=self.x,
+                                         y=self.y)
 
         print("Prev:[%s] Cur:[%s]" % (KEYS[self.prev_key], KEYS[self.key]))
 
@@ -167,8 +167,8 @@ if __name__ == '__main__':
     fmt = QSurfaceFormat()
     fmt.setSamples(1)
     QSurfaceFormat.setDefaultFormat(fmt)
-    x = 50
-    y = 50
+    x = 5
+    y = 5
     window = SnakeGame(x, y)
     window.show()
 

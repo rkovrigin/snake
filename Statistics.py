@@ -6,6 +6,14 @@ from Snake import Cell
 from pathlib import Path
 import pickle
 
+KEYS = {
+    Qt.Key_Right : "RIGHT",
+    Qt.Key_Left : "LEFT",
+    Qt.Key_Up : "UP",
+    Qt.Key_Down : "DOWN",
+    None : "None"
+}
+
 EMPTY = 0
 BODY = 1
 HEAD = 2
@@ -30,6 +38,7 @@ class Statistic(object):
         self.data = list()
         self.view_range = view_range
         self.output = output
+        np.set_printoptions(threshold=np.nan)
 
     def get_direction(self, prev_key, snake):
         if prev_key == None:
@@ -101,7 +110,7 @@ class Statistic(object):
         # elif snake.current_key == Qt.Key_Down:
         #     snapshot.extend([0, 0, 0, 1])
 
-    def save_snapshot(self, prev_key, snake, fruit, x, y):
+    def save_snapshot(self, current_direction, next_direction, snake, fruit, x, y):
         my_map = np.zeros([x, y], dtype=int)
 
         for cell in snake:
@@ -109,12 +118,12 @@ class Statistic(object):
 
         my_map[snake.head.x, snake.head.y] = HEAD
         my_map[fruit.x, fruit.y] = FRUIT
-        current_direction = snake.current_key
-        previous_direction = prev_key
 
         try:
             with open(self.output, "a+") as output:
-                output.write("%d;%d;%s;%d;%d\n" % (x, y, [i[0] for i in my_map.reshape([x*y, 1]).tolist()], previous_direction, current_direction))
+                print(my_map)
+                output.write("%d;%d;%s;%d;%d\n" %
+                             (x, y, [i[0] for i in my_map.reshape([x*y, 1]).tolist()], current_direction, next_direction))
         except Exception as e:
             print(e)
 
@@ -135,20 +144,66 @@ class Statistic(object):
 
                 if int(parsed[0]) == x and int(parsed[1]) == y:
                     my_map = np.array([int(i) for i in parsed[2].strip("[]").split(', ')]).reshape((x, y))
-                    prev_direction = int(parsed[3])
-                    cur_direction = int(parsed[4])
+                    current_direction = int(parsed[3])
+                    next_direction = int(parsed[4])
                     snapshot = {'x': x,
                                 'y': y,
                                 'map': my_map,
-                                'prev_direction': prev_direction,
-                                'cur_direction': cur_direction}
+                                'current_direction': current_direction,
+                                'next_direction': next_direction}
                     snapshots.append(snapshot)
 
         return snapshots
 
+    def _get_head(self, np_array):
+        x, y = np_array.shape
+        for i in range(x):
+            for j in range(y):
+                if np_array[i, j] == HEAD:
+                    return Cell(i, j)
+
+    def _get_obsacle(self, np_array, x, y):
+        X, Y = np_array.shape
+        if x < 0 or x >= X or y < 0 or y >= Y:
+            return WALL
+        return np_array[x, y]
+
+
+    def _get_surroundings(self, np_array, current_direction):
+        obstacle = [0, 0, 0] # forward, left, right
+        head = self._get_head(np_array)
+        if current_direction == Qt.Key_Right:
+            obstacle[0] = self._get_obsacle(np_array, head.x + 1, head.y)
+            obstacle[1] = self._get_obsacle(np_array, head.x, head.y - 1)
+            obstacle[2] = self._get_obsacle(np_array, head.x, head.y + 1)
+        elif current_direction == Qt.Key_Left:
+            obstacle[0] = self._get_obsacle(np_array, head.x - 1, head.y)
+            obstacle[1] = self._get_obsacle(np_array, head.x, head.y + 1)
+            obstacle[2] = self._get_obsacle(np_array, head.x, head.y - 1)
+        elif current_direction == Qt.Key_Up:
+            obstacle[0] = self._get_obsacle(np_array, head.x, head.y - 1)
+            obstacle[1] = self._get_obsacle(np_array, head.x - 1, head.y)
+            obstacle[2] = self._get_obsacle(np_array, head.x + 1, head.y)
+        elif current_direction == Qt.Key_Down:
+            obstacle[0] = self._get_obsacle(np_array, head.x, head.y + 1)
+            obstacle[1] = self._get_obsacle(np_array, head.x + 1, head.y)
+            obstacle[2] = self._get_obsacle(np_array, head.x - 1, head.y)
+
+
+        print(np_array)
+        print(obstacle, KEYS[current_direction])
+
+        return obstacle
+
     def prepare_data_1(self):
         data = self.read_snapshots()
-        print(data[0]["map"])
+        i = 0
+        for snapshot in data:
+            obstacles = self._get_surroundings(np_array=snapshot["map"], current_direction=snapshot["current_direction"])
+            # print(self._get_head(snapshot["map"]), obstacles)
+            # i += 1
+            # if i >= 2:
+            #     exit(1)
 
 
     def get_overview(self, snake, fruit, x, y):

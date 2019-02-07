@@ -16,6 +16,9 @@ class Cell(object):
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
 
+    def __str__(self):
+        return "[%d:%d]" % (self.x, self.y)
+
 
 class Snake(object):
 
