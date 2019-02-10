@@ -1,6 +1,6 @@
 import sys
 import time
-from copy import copy
+from copy import deepcopy
 from random import randrange
 
 from PyQt5.QtCore import Qt
@@ -11,7 +11,8 @@ from LogisticRegression import LogisticRegression
 from Snake import Snake, Cell
 from Statistics import Statistic, KEYS
 
-DEFAULT_TIMER = 200
+DEFAULT_TIMER = 300
+
 
 class GLWidget(QOpenGLWidget):
     def __init__(self, parent, x, y, scale):
@@ -113,13 +114,13 @@ class SnakeGame(Window):
             elif move == 3:
                 self.key = Qt.Key_Down
 
-        snake_copy = copy(self.snake)
+        snake_copy = deepcopy(self.snake)
 
         self.snake.move(self.key)
         if self.snake.collapse(x, y):
             self.killTimer(self.timer_id)
-            if not self.auto:
-                self.statistic.save()
+            # if not self.auto:
+            #     self.statistic.save()
 
             self.run = False
             self.fruit = None
@@ -144,14 +145,14 @@ class SnakeGame(Window):
 
         if self.run and not self.auto:
             # self.statistic.snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
-            self.statistic.save_snapshot(current_direction=self.prev_key,
+            self.statistic.save_snapshot(current_direction=snake_copy.current_key, #self.prev_key,
                                          next_direction=self.key,
                                          snake=snake_copy,
                                          fruit=self.fruit,
                                          x=self.x,
                                          y=self.y)
 
-        print("Prev:[%s] Cur:[%s]" % (KEYS[self.prev_key], KEYS[self.key]))
+            # print("Prev:[%s] Cur:[%s] Snake.Current[%s]" % (KEYS[self.prev_key], KEYS[self.key], KEYS[snake_copy.current_key]))
 
         self.prev_key = self.key
 
@@ -167,8 +168,8 @@ if __name__ == '__main__':
     fmt = QSurfaceFormat()
     fmt.setSamples(1)
     QSurfaceFormat.setDefaultFormat(fmt)
-    x = 5
-    y = 5
+    x = 50
+    y = 50
     window = SnakeGame(x, y)
     window.show()
 

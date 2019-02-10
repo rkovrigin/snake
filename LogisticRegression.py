@@ -3,6 +3,8 @@ import numpy as np
 import scipy.optimize as op
 import matplotlib.pyplot as plt
 
+from Statistics import Statistic
+
 
 def sigmoid(matrix):
     return 1.0 / (1.0 + np.exp(-matrix))
@@ -10,31 +12,43 @@ def sigmoid(matrix):
 
 class LogisticRegression(object):
 
-    def __init__(self, file_name="", my_lambda=0):
+    def __init__(self, file_name="", my_lambda=1):
         self.X = None
         self.Y = None
         self.theta = None
         self.classes = 3
         self.my_lambda = my_lambda
         self.cost_data = [[], [], []]
+        self.stat = Statistic()
 
-        if os.path.exists(file_name):
-            x_data = list()
-            y_data = list()
-            f = open(file_name, "r+")
-            last = None
-            for line in f:
-                x_data.append([int(i) for i in line.split(",")][:-2])
-                y_data.append(int(line.split(",")[-1:][0]))
+        x_data = list()
+        y_data = list()
+        for snapshot in self.stat.prepare_data_1():
+            print(snapshot)
+            x_data.append(snapshot[:-1])
+            y_data.append(snapshot[-1:][0])
+        self.X = np.asarray(x_data)
+        self.Y = np.asarray(y_data)
+        self.theta = np.zeros([self.classes, len(x_data[0])])
+        self.m = len(y_data)
 
-            self.X = np.asarray(x_data)
-            self.Y = np.asarray(y_data)
-            self.theta = np.zeros([self.classes, len(x_data[0])])
-            self.m = len(y_data)
-
-            # print(self.X.shape)
-            # print(self.Y.shape)
-            # print(self.theta.shape)
+        # if os.path.exists(file_name):
+        #     x_data = list()
+        #     y_data = list()
+        #     f = open(file_name, "r+")
+        #     last = None
+        #     for line in f:
+        #         x_data.append([int(i) for i in line.split(",")][:-2])
+        #         y_data.append(int(line.split(",")[-1:][0]))
+        #
+        #     self.X = np.asarray(x_data)
+        #     self.Y = np.asarray(y_data)
+        #     self.theta = np.zeros([self.classes, len(x_data[0])])
+        #     self.m = len(y_data)
+        #
+        #     # print(self.X.shape)
+        #     # print(self.Y.shape)
+        #     # print(self.theta.shape)
 
     def cost_function(self, initial_theta, X, y, i):
         zero_theta = initial_theta.copy()
@@ -60,9 +74,10 @@ class LogisticRegression(object):
         sig = sigmoid(np.matmul(X, initial_theta))
         reg = self.my_lambda * zero_theta
         # reg = 0
-        grad = (np.matmul(np.transpose(X), sig - y) + reg) / self.m
+        # grad = (np.matmul(np.transpose(X), sig - y) + reg) / self.m
         # grad = (np.matmul(np.transpose(X), np.subtract(sig, y)) + self.my_lambda * zero_theta) / self.m
-        # grad = (np.matmul(np.transpose(X), np.subtract(sig, y))) / self.m
+        grad = (np.matmul(np.transpose(X), sig - y) + reg) / self.m
+        # print(grad)
 
         return grad
 
@@ -93,11 +108,15 @@ class LogisticRegression(object):
         return w.index(max(w))
 
 
-# lr = LogisticRegression("learning3_copy.txt")
-# print(lr.optimize_thetas())
-#
-# plt.plot(lr.cost_data[0])
-# plt.plot(lr.cost_data[1])
-# plt.plot(lr.cost_data[2])
-# plt.ylabel('some numbers')
-# plt.show()
+def main():
+    for i in [100000]:
+        lr = LogisticRegression("dump.txt", my_lambda=i)
+        print(lr.optimize_thetas())
+
+        plt.plot(lr.cost_data[0])
+        plt.plot(lr.cost_data[1])
+        plt.plot(lr.cost_data[2])
+    # plt.show()
+
+if __name__ == "__main__":
+    main()
