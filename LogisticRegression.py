@@ -12,14 +12,14 @@ def sigmoid(matrix):
 
 class LogisticRegression(object):
 
-    def __init__(self, file_name="", my_lambda=1):
+    def __init__(self, file_name="", my_lambda=0.1):
         self.X = None
         self.Y = None
         self.theta = None
         self.classes = 3
         self.my_lambda = my_lambda
         self.cost_data = [[], [], []]
-        self.stat = Statistic()
+        self.stat = Statistic(output=file_name)
 
         x_data = list()
         y_data = list()
@@ -83,12 +83,13 @@ class LogisticRegression(object):
 
     def optimize(self, index):
         initial_theta = np.zeros(len(self.theta[index]))
-        # y = self.Y == index
-        # y = y.astype(int)
+        y = self.Y == index
+        y = y.astype(int)
         # y = self.Y
+        # print(y)
         result = op.minimize(fun=self.cost_function,
                              x0=initial_theta,
-                            args=(self.X, self.Y, index),
+                            args=(self.X, y, index),
                             method='TNC',
                             jac=self.gradient)
         print(result)
@@ -109,14 +110,14 @@ class LogisticRegression(object):
 
 
 def main():
-    for i in [100000]:
-        lr = LogisticRegression("dump.txt", my_lambda=i)
-        print(lr.optimize_thetas())
+    lr = LogisticRegression("dump.txt", my_lambda=1)
+    print(lr.optimize_thetas())
 
-        plt.plot(lr.cost_data[0])
-        plt.plot(lr.cost_data[1])
-        plt.plot(lr.cost_data[2])
-    # plt.show()
+    plt.plot(lr.cost_data[0], 'k')
+    plt.plot(lr.cost_data[1], 'g')
+    plt.plot(lr.cost_data[2], 'r')
+    plt.show()
+
 
 if __name__ == "__main__":
     main()

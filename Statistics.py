@@ -3,6 +3,8 @@ from math import sqrt, acos
 
 import numpy as np
 from PyQt5.QtCore import Qt
+
+import keys_mapping
 from Snake import Cell
 
 KEYS = {
@@ -41,7 +43,7 @@ class Statistic(object):
         self.to_dump = list()
 
     def get_direction(self, prev_key, current_key, snake):
-        if prev_key == None:
+        if prev_key is None:
             return FORWARD
         elif prev_key != snake.current_key:
             if prev_key == Qt.Key_Right:
@@ -75,9 +77,6 @@ class Statistic(object):
         else:
             return FORWARD
 
-    # get_3_cells
-
-    # TODO: delete the last line from snapshot before save this data to a file
     def snapshot(self, prev_key, snake, fruit, x, y):
         head = snake.head
         snapshot = list()
@@ -101,34 +100,20 @@ class Statistic(object):
             print(snapshot)
             self.data.append(snapshot)
 
-        # if snake.current_key == Qt.Key_Right:
-        #     snapshot.extend([1, 0, 0, 0])
-        # elif snake.current_key == Qt.Key_Left:
-        #     snapshot.extend([0, 1, 0, 0])
-        # elif snake.current_key == Qt.Key_Up:
-        #     snapshot.extend([0, 0, 1, 0])
-        # elif snake.current_key == Qt.Key_Down:
-        #     snapshot.extend([0, 0, 0, 1])
-
-    def print_map(self, current_direction, next_direction, snake, fruit, x, y):
+    def create_map(self, snake, fruit, x, y):
         my_map = np.zeros([x, y], dtype=int)
-
         for cell in snake:
             my_map[cell.x, cell.y] = BODY
-
         my_map[snake.head.x, snake.head.y] = HEAD
         my_map[fruit.x, fruit.y] = FRUIT
+        return my_map
 
+    def print_map(self, snake, fruit, x, y):
+        my_map = self.create_map(snake, fruit, x, y)
         print(np.flip(np.rot90(my_map), 0))
 
     def save_snapshot(self, current_direction, next_direction, snake, fruit, x, y):
-        my_map = np.zeros([x, y], dtype=int)
-
-        for cell in snake:
-            my_map[cell.x, cell.y] = BODY
-
-        my_map[snake.head.x, snake.head.y] = HEAD
-        my_map[fruit.x, fruit.y] = FRUIT
+        my_map = self.create_map(snake, fruit, x, y)
 
         try:
             self.to_dump.append("%d;%d;%s;%d;%d\n" %
@@ -143,7 +128,6 @@ class Statistic(object):
                     output.write(snapshot)
                 # print(np.flip(np.rot90(my_map), 0))
             self.to_dump.clear()
-
 
     def read_snapshots(self, file=None, x=None, y=None):
         if not file:
@@ -187,25 +171,36 @@ class Statistic(object):
             return WALL
         return np_array[x, y]
 
-    def _get_surroundings(self, np_array, current_direction):
+    def _is_element_on_my_way(self, np_array, x, y, item=WALL):
+        _x, _y = np_array.shape
+        if x < 0 or x >= _x or y < 0 or y >= _y:
+            if item == WALL:
+                return 1
+            else:
+                return EMPTY
+        if np_array[x, y] == item:
+            return 1
+        return EMPTY
+
+    def _get_surroundings(self, np_array, current_direction, item=WALL):
         obstacle = [0, 0, 0]  # forward, left, right
         head = self._get_head(np_array)
         if current_direction == Qt.Key_Right:
-            obstacle[0] = self._get_obsacle(np_array, head.x + 1, head.y)
-            obstacle[1] = self._get_obsacle(np_array, head.x, head.y + 1)
-            obstacle[2] = self._get_obsacle(np_array, head.x, head.y - 1)
+            obstacle[0] = self._is_element_on_my_way(np_array, head.x + 1, head.y, item=item)
+            obstacle[1] = self._is_element_on_my_way(np_array, head.x, head.y + 1, item=item)
+            obstacle[2] = self._is_element_on_my_way(np_array, head.x, head.y - 1, item=item)
         elif current_direction == Qt.Key_Left:
-            obstacle[0] = self._get_obsacle(np_array, head.x - 1, head.y)
-            obstacle[1] = self._get_obsacle(np_array, head.x, head.y - 1)
-            obstacle[2] = self._get_obsacle(np_array, head.x, head.y + 1)
+            obstacle[0] = self._is_element_on_my_way(np_array, head.x - 1, head.y, item=item)
+            obstacle[1] = self._is_element_on_my_way(np_array, head.x, head.y - 1, item=item)
+            obstacle[2] = self._is_element_on_my_way(np_array, head.x, head.y + 1, item=item)
         elif current_direction == Qt.Key_Up:
-            obstacle[0] = self._get_obsacle(np_array, head.x, head.y - 1)
-            obstacle[1] = self._get_obsacle(np_array, head.x - 1, head.y)
-            obstacle[2] = self._get_obsacle(np_array, head.x + 1, head.y)
+            obstacle[0] = self._is_element_on_my_way(np_array, head.x, head.y - 1, item=item)
+            obstacle[1] = self._is_element_on_my_way(np_array, head.x - 1, head.y, item=item)
+            obstacle[2] = self._is_element_on_my_way(np_array, head.x + 1, head.y, item=item)
         elif current_direction == Qt.Key_Down:
-            obstacle[0] = self._get_obsacle(np_array, head.x, head.y + 1)
-            obstacle[1] = self._get_obsacle(np_array, head.x + 1, head.y)
-            obstacle[2] = self._get_obsacle(np_array, head.x - 1, head.y)
+            obstacle[0] = self._is_element_on_my_way(np_array, head.x, head.y + 1, item=item)
+            obstacle[1] = self._is_element_on_my_way(np_array, head.x + 1, head.y, item=item)
+            obstacle[2] = self._is_element_on_my_way(np_array, head.x - 1, head.y, item=item)
 
         return obstacle
 
@@ -218,32 +213,41 @@ class Statistic(object):
     def _print_user_friendly(self, np_array):
         print(np.rot90(np.flip(np_array, 1)))
 
+    def _get_snake_length(self, np_array):
+        x, y = np_array.shape
+        length = 0
+        for i in range(x):
+            for j in range(y):
+                if np_array[i, j] == 1 or np_array[i, j] == 2:
+                    length += 1
+        return length
+
+    def snapshot_prepare_data_1(self, np_array, current_key):
+        head = self._get_head(np_array)
+        fruit = self._get_fruit(np_array)
+        wall_on_my_way = self._get_surroundings(np_array=np_array, current_direction=current_key, item=WALL)
+        fruit_on_my_way = self._get_surroundings(np_array=np_array, current_direction=current_key, item=FRUIT)
+        obstacles = wall_on_my_way + fruit_on_my_way
+        obstacles.append(self._calc_distance(head, fruit))
+        obstacles.append(self._calc_angle_rad(head, fruit))
+        obstacles.append(head.x - fruit.x)
+        obstacles.append(head.y - fruit.y)
+        obstacles.append(self._get_snake_length(np_array=np_array))
+        # print(obstacles)
+        return obstacles
+
     def prepare_data_1(self):
         # forward_obstacle left_obstacle right_obstacle distance angle_rad x_distance y_distance button_to_press
         data = self.read_snapshots()
         learning_data = list()
         for snapshot in data:
-            obstacles = self._get_surroundings(np_array=snapshot["map"],
-                                               current_direction=snapshot["current_direction"])
-            head = self._get_head(snapshot["map"])
-            fruit = self._get_fruit(snapshot["map"])
-            obstacles.append(self._calc_distance(head, fruit))
-            obstacles.append(self._calc_angle_rad(head, fruit))
-            obstacles.append(head.x - fruit.x)
-            obstacles.append(head.y - fruit.y)
-            #TODO: add only forward/left/right direction depending on current and future buttons
-            obstacles.append(snapshot["next_direction"])
-            # self._print_user_friendly(snapshot["map"])
-            print(obstacles)
-            learning_data.append(obstacles)
+            obstacles = self.snapshot_prepare_data_1(np_array=snapshot["map"], current_key=snapshot["current_direction"])
+            next_direction = keys_mapping.mapping_4_to_3(snapshot["current_direction"], snapshot["next_direction"])
+            obstacles.append(next_direction)
+            if next_direction is not None:
+                # print(obstacles)
+                learning_data.append(obstacles)
         return learning_data
-
-    def prepare_data_2(self):
-        s = set()
-        data = self.read_snapshots()
-        for snapshot in data:
-            s.add(snapshot["next_direction"])
-        print(s)
 
     def get_overview(self, snake, fruit, x, y):
         head = snake.head
@@ -274,7 +278,7 @@ class Statistic(object):
 
 def main():
     st = Statistic()
-    st.prepare_data_2()
+    st.prepare_data_1()
 
 
 if __name__ == "__main__":

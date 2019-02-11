@@ -7,6 +7,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QSurfaceFormat
 from PyQt5.QtWidgets import QApplication, QGridLayout, QLabel, QOpenGLWidget, QWidget
 
+import keys_mapping
 from LogisticRegression import LogisticRegression
 from Snake import Snake, Cell
 from Statistics import Statistic, KEYS
@@ -76,8 +77,8 @@ class SnakeGame(Window):
         self.statistic = Statistic()
         self.set_fruit()
         self.run = False
-        self.lr = LogisticRegression("learning3.txt")
-        self.auto = False
+        self.lr = LogisticRegression("dump.txt", my_lambda=1)
+        self.auto = True
         self.key = None
         self.prev_key = None
         if self.auto:
@@ -103,16 +104,10 @@ class SnakeGame(Window):
             self.run = True
 
         if self.auto:
-            move = self.lr.predict(self.statistic.get_overview(self.snake, self.fruit, self.x, self.y))
-
-            if move == 0:
-                self.key = Qt.Key_Right
-            elif move == 1:
-                self.key = Qt.Key_Left
-            elif move == 2:
-                self.key = Qt.Key_Up
-            elif move == 3:
-                self.key = Qt.Key_Down
+            np_array_map = self.statistic.create_map(self.snake, self.fruit, self.x, self.y)
+            obstacles = self.statistic.snapshot_prepare_data_1(np_array_map, self.snake.current_key)
+            move = self.lr.predict(obstacles)
+            self.key = keys_mapping.mapping_3_to_4(next_move=move, current_key=self.key, previous_key=self.prev_key)
 
         snake_copy = deepcopy(self.snake)
 
