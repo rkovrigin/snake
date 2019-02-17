@@ -21,6 +21,8 @@ HEAD = 2
 WALL = 3
 FRUIT = 4
 
+ITEM = 1
+
 FORWARD = 0
 LEFT = 1
 RIGHT = 2
@@ -35,12 +37,12 @@ class Snapshot(object):
 
 class Statistic(object):
 
-    def __init__(self, view_range=10, output="dump.txt"):
+    def __init__(self, view_range=10, output="dump.txt", write=False):
         self.data = list()
         self.view_range = view_range
         self.output = output
         np.set_printoptions(threshold=np.nan)
-        self.to_dump = list()
+        self.file = None
 
     def get_direction(self, prev_key, current_key, snake):
         if prev_key is None:
@@ -97,7 +99,7 @@ class Statistic(object):
         direction = self.get_direction(prev_key, snake)
         if direction is not None:
             snapshot.append(direction)
-            print(snapshot)
+            # print(snapshot)
             self.data.append(snapshot)
 
     def create_map(self, snake, fruit, x, y):
@@ -106,28 +108,38 @@ class Statistic(object):
             my_map[cell.x, cell.y] = BODY
         my_map[snake.head.x, snake.head.y] = HEAD
         my_map[fruit.x, fruit.y] = FRUIT
+
+        if snake.head == fruit:
+            my_map[snake.head.x, snake.head.y] = HEAD + FRUIT
+
         return my_map
 
     def print_map(self, snake, fruit, x, y):
         my_map = self.create_map(snake, fruit, x, y)
         print(np.flip(np.rot90(my_map), 0))
 
-    def save_snapshot(self, current_direction, next_direction, snake, fruit, x, y):
+    def create_snapshot(self, current_direction, next_direction, snake, fruit, x, y):
+        if not fruit or not current_direction or not next_direction:
+            return
+
         my_map = self.create_map(snake, fruit, x, y)
 
         try:
-            self.to_dump.append("%d;%d;%s;%d;%d\n" %
+            return ("%d;%d;%s;%d;%d\n" %
                              (x, y, [i[0] for i in my_map.reshape([x * y, 1]).tolist()], current_direction,
                               next_direction))
         except Exception as e:
             print(e)
 
-        if len(self.to_dump) >= 10:
-            with open(self.output, "a+") as output:
-                for snapshot in self.to_dump:
-                    output.write(snapshot)
-                # print(np.flip(np.rot90(my_map), 0))
-            self.to_dump.clear()
+    def save_snapshot(self, snapshot):
+        if not snapshot:
+            return
+
+        if not self.file:
+            self.file = open(self.output, "a+")
+
+        self.file.write(snapshot)
+        self.file.flush()
 
     def read_snapshots(self, file=None, x=None, y=None):
         if not file:
@@ -160,10 +172,16 @@ class Statistic(object):
                     return Cell(i, j)
 
     def _get_head(self, np_array):
-        return self._get_first(np_array, HEAD)
+        head = self._get_first(np_array, HEAD)
+        if not head:
+            return self._get_first(np_array, HEAD + FRUIT)
+        return head
 
     def _get_fruit(self, np_array):
-        return self._get_first(np_array, FRUIT)
+        fruit = self._get_first(np_array, FRUIT)
+        if not fruit:
+            return self._get_first(np_array, FRUIT + HEAD)
+        return fruit
 
     def _get_obsacle(self, np_array, x, y):
         X, Y = np_array.shape
@@ -175,24 +193,29 @@ class Statistic(object):
         _x, _y = np_array.shape
         if x < 0 or x >= _x or y < 0 or y >= _y:
             if item == WALL:
-                return 1
+                return ITEM
             else:
                 return EMPTY
-        if np_array[x, y] == item:
-            return 1
+        if item == WALL:
+            if np_array[x, y] == BODY or np_array[x, y] == WALL:
+                return ITEM
+        elif item == FRUIT:
+            if np_array[x, y] == FRUIT:
+                return 1
         return EMPTY
 
     def _get_surroundings(self, np_array, current_direction, item=WALL):
+        # TODO: Qt.Key_left - change left and right - DONE
         obstacle = [0, 0, 0]  # forward, left, right
         head = self._get_head(np_array)
         if current_direction == Qt.Key_Right:
             obstacle[0] = self._is_element_on_my_way(np_array, head.x + 1, head.y, item=item)
-            obstacle[1] = self._is_element_on_my_way(np_array, head.x, head.y + 1, item=item)
-            obstacle[2] = self._is_element_on_my_way(np_array, head.x, head.y - 1, item=item)
-        elif current_direction == Qt.Key_Left:
-            obstacle[0] = self._is_element_on_my_way(np_array, head.x - 1, head.y, item=item)
             obstacle[1] = self._is_element_on_my_way(np_array, head.x, head.y - 1, item=item)
             obstacle[2] = self._is_element_on_my_way(np_array, head.x, head.y + 1, item=item)
+        elif current_direction == Qt.Key_Left:
+            obstacle[0] = self._is_element_on_my_way(np_array, head.x - 1, head.y, item=item)
+            obstacle[1] = self._is_element_on_my_way(np_array, head.x, head.y + 1, item=item)
+            obstacle[2] = self._is_element_on_my_way(np_array, head.x, head.y - 1, item=item)
         elif current_direction == Qt.Key_Up:
             obstacle[0] = self._is_element_on_my_way(np_array, head.x, head.y - 1, item=item)
             obstacle[1] = self._is_element_on_my_way(np_array, head.x - 1, head.y, item=item)
@@ -201,14 +224,20 @@ class Statistic(object):
             obstacle[0] = self._is_element_on_my_way(np_array, head.x, head.y + 1, item=item)
             obstacle[1] = self._is_element_on_my_way(np_array, head.x + 1, head.y, item=item)
             obstacle[2] = self._is_element_on_my_way(np_array, head.x - 1, head.y, item=item)
-
         return obstacle
 
     def _calc_distance(self, head, fruit):
         return sqrt((head.x - fruit.x)**2 + (head.y - fruit.y)**2)
 
     def _calc_angle_rad(self, head, fruit):
-        return math.atan2(head.y - fruit.y, head.x - fruit.x) #radian
+        return math.atan2(head.y - fruit.y, head.x - fruit.x)
+
+    def _calc_angle_degrees(self, head, fruit):
+        angle = math.degrees(self._calc_angle_rad(head, fruit))
+        # if angle < 0:
+        #     angle += 360
+        return angle
+
 
     def _print_user_friendly(self, np_array):
         print(np.rot90(np.flip(np_array, 1)))
@@ -218,26 +247,37 @@ class Statistic(object):
         length = 0
         for i in range(x):
             for j in range(y):
-                if np_array[i, j] == 1 or np_array[i, j] == 2:
+                if np_array[i, j] == HEAD or np_array[i, j] == BODY or np_array[i, j] == HEAD + FRUIT:
                     length += 1
         return length
 
     def snapshot_prepare_data_1(self, np_array, current_key):
+        x, y = np_array.shape
         head = self._get_head(np_array)
         fruit = self._get_fruit(np_array)
+
         wall_on_my_way = self._get_surroundings(np_array=np_array, current_direction=current_key, item=WALL)
         fruit_on_my_way = self._get_surroundings(np_array=np_array, current_direction=current_key, item=FRUIT)
         obstacles = wall_on_my_way + fruit_on_my_way
-        obstacles.append(self._calc_distance(head, fruit))
-        obstacles.append(self._calc_angle_rad(head, fruit))
-        obstacles.append(head.x - fruit.x)
-        obstacles.append(head.y - fruit.y)
-        obstacles.append(self._get_snake_length(np_array=np_array))
-        # print(obstacles)
+
+        diag = (math.sqrt(x**2 + y**2))
+        obstacles.append((self._calc_distance(head, fruit)) / diag)
+        obstacles.append((self._calc_distance(fruit, head)) / diag)
+        obstacles.append(self._calc_angle_degrees(head, fruit) / 180)
+        obstacles.append(self._calc_angle_degrees(fruit, head) / 180)
+        # obstacles.append(math.fabs(head.x - fruit.x) / x)
+        # obstacles.append(math.fabs(head.y - fruit.y) / y)
+
+        obstacles.append((head.x - fruit.x) / diag)
+        obstacles.append((head.y - fruit.y) / diag)
+        obstacles.append((fruit.x - head.x) / diag)
+        obstacles.append((fruit.y - head.y) / diag)
+
+        key = current_key - 16777234
+        obstacles.append(key / 4)
         return obstacles
 
     def prepare_data_1(self):
-        # forward_obstacle left_obstacle right_obstacle distance angle_rad x_distance y_distance button_to_press
         data = self.read_snapshots()
         learning_data = list()
         for snapshot in data:
@@ -245,7 +285,7 @@ class Statistic(object):
             next_direction = keys_mapping.mapping_4_to_3(snapshot["current_direction"], snapshot["next_direction"])
             obstacles.append(next_direction)
             if next_direction is not None:
-                # print(obstacles)
+                print(obstacles)
                 learning_data.append(obstacles)
         return learning_data
 
@@ -264,7 +304,7 @@ class Statistic(object):
                     snapshot.append(FRUIT)
                 else:
                     snapshot.append(EMPTY)
-        print(snapshot)
+        # print(snapshot)
         return snapshot
 
     def save(self, file_name="learning3.txt"):
@@ -278,7 +318,19 @@ class Statistic(object):
 
 def main():
     st = Statistic()
-    st.prepare_data_1()
+    # data = st.prepare_data_1()
+    # np.set_printoptions(threshold=np.nan)
+    # for snapshot in data:
+    #     st._print_user_friendly(snapshot["map"])
+
+    with open("dump.txt", "r") as input_file:
+        for line in input_file:
+            parsed = line.split(";")
+            x = int(parsed[0])
+            y = int(parsed[1])
+            my_map = np.array([int(i) for i in parsed[2].strip("[]").split(', ')]).reshape((x, y))
+            st._print_user_friendly(my_map)
+            print('\n\n')
 
 
 if __name__ == "__main__":
