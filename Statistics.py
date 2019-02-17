@@ -37,7 +37,7 @@ class Snapshot(object):
 
 class Statistic(object):
 
-    def __init__(self, view_range=10, output="dump.txt", write=False):
+    def __init__(self, view_range=10, output="dump.txt"):
         self.data = list()
         self.view_range = view_range
         self.output = output
@@ -314,6 +314,19 @@ class Statistic(object):
             f.write(str(snapshot)[1:-1] + '\n')
         f.close()
         self.data.clear()
+
+    def get_training_set(self):
+        x_data = list()
+        y_data = list()
+
+        for training_set in self.prepare_data_1():
+            x_data.append(training_set[:-1])
+            y_data.append(training_set[-1:][0])
+        X = np.asarray(x_data)
+        Y = np.asarray(y_data)
+        m = len(y_data)
+
+        return [X, Y, m]
 
 
 def main():
