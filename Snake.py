@@ -37,12 +37,18 @@ class Snake(object):
     def __contains__(self, item):
         return item in self.body
 
+    def __str__(self):
+        snake = "Snake: "
+        for cell in self:
+            snake = snake + "[%d:%d]" % (cell.x, cell.y)
+        return snake
+
     @property
     def head(self):
         return self.body[len(self.body)-1]
 
     def eat_fruit(self):
-        self.grow_from_fruit += 2
+        self.grow_from_fruit += 1
 
     def collapse(self, X, Y):
         if len(self) == 1:
