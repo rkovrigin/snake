@@ -1,6 +1,7 @@
 import sys
 import time
 from copy import deepcopy
+from itertools import cycle
 from random import randrange
 
 from PyQt5.QtCore import Qt
@@ -10,9 +11,9 @@ from PyQt5.QtWidgets import QApplication, QGridLayout, QLabel, QOpenGLWidget, QW
 import keys_mapping
 from LogisticRegression import LogisticRegression
 from Snake import Snake, Cell
-from Statistics import Statistic, KEYS
+from Statistics import Statistic
 
-DEFAULT_TIMER = 300
+DEFAULT_TIMER = 100
 
 
 class GLWidget(QOpenGLWidget):
@@ -74,24 +75,48 @@ class SnakeGame(Window):
         self.snake = Snake(x//2, y//2)
         self.fruit = None
         super(SnakeGame, self).__init__(x, y, scale)
-        self.statistic = Statistic()
-        self.set_fruit()
+
         self.run = False
-        self.lr = LogisticRegression("dump.txt", my_lambda=1)
-        self.auto = True
         self.key = None
         self.prev_key = None
+        self.prev_fruit = None
+
+        self.auto = True
+
         if self.auto:
+            self.lr = LogisticRegression(file_name="dump.txt", my_lambda=1)
             self.lr.optimize_thetas()
+        self.statistic = Statistic()
+
+        self.fruit_list = list()
+        for i in range(1, self.x-1, 2):
+            for j in range(1, self.y-1, 2):
+                self.fruit_list.append(Cell(j, i))
+        for i in range(1, self.x-1, 2):
+            for j in range(1, self.y-1, 2):
+                self.fruit_list.append(Cell(i, j))
+
+        self.fruit_reverse = deepcopy(self.fruit_list)
+        self.fruit_reverse.reverse()
+        self.fruits = cycle(self.fruit_reverse + self.fruit_list)
+        self.set_fruit()
+
+        self.snapshot = None
 
     def keyPressEvent(self, event):
         if not self.auto and self.fruit is not None:
             self.key = event.key()
 
+    def set_fruit_(self):
+        self.fruit = None
+        while not self.fruit:
+            f = next(self.fruits)
+            if f not in self.snake:
+                self.fruit = Cell(f.x, f.y)
+                break
+
     def set_fruit(self):
         self.fruit = None
-        # self.fruit = Cell(x//2-2, y//2-2)
-        # return
         while not self.fruit:
             self.fruit = Cell(randrange(0, self.x), randrange(0, self.y))
             for cell in self.snake:
@@ -104,18 +129,35 @@ class SnakeGame(Window):
             self.run = True
 
         if self.auto:
-            np_array_map = self.statistic.create_map(self.snake, self.fruit, self.x, self.y)
-            obstacles = self.statistic.snapshot_prepare_data_1(np_array_map, self.snake.current_key)
-            move = self.lr.predict(obstacles)
-            self.key = keys_mapping.mapping_3_to_4(next_move=move, current_key=self.key, previous_key=self.prev_key)
+            if self.key:
+                np_array_map = self.statistic.create_map(self.snake, self.fruit, self.x, self.y)
+                obstacles = self.statistic.snapshot_prepare_data_1(np_array_map, self.snake.current_key)
+                move = self.lr.predict(obstacles)
+                self.key = keys_mapping.mapping_3_to_4(next_move=move, current_key=self.key, previous_key=self.prev_key)
+            else:
+                self.key = Qt.Key_Left
 
-        snake_copy = deepcopy(self.snake)
+        if self.prev_fruit:
+            self.snapshot = self.statistic.create_snapshot(
+                current_direction=self.snake.current_key,
+                next_direction=self.key,
+                snake=self.snake,
+                fruit=self.prev_fruit,
+                x=self.x,
+                y=self.y)
+            self.prev_fruit = None
+        else:
+            self.snapshot = self.statistic.create_snapshot(
+                current_direction=self.snake.current_key,
+                next_direction=self.key,
+                snake=self.snake,
+                fruit=self.fruit,
+                x=self.x,
+                y=self.y)
 
         self.snake.move(self.key)
         if self.snake.collapse(x, y):
             self.killTimer(self.timer_id)
-            # if not self.auto:
-            #     self.statistic.save()
 
             self.run = False
             self.fruit = None
@@ -125,7 +167,6 @@ class SnakeGame(Window):
 
             time.sleep(2)
 
-
             self.setWindowTitle("Snake")
             self.snake = Snake(self.x // 2, self.y // 2)
             self.set_fruit()
@@ -133,21 +174,14 @@ class SnakeGame(Window):
             self.timer_id = self.startTimer(self.timer)
 
         if self.snake.check_fruit(self.fruit):
+            self.prev_fruit = deepcopy(self.fruit)
             self.set_fruit()
             self.killTimer(self.timer_id)
-            self.timer = max(80, self.timer - 10)
+            self.timer = max(150, self.timer - 10)
             self.timer_id = self.startTimer(self.timer)
 
         if self.run and not self.auto:
-            # self.statistic.snapshot(self.prev_key, self.snake, self.fruit, self.x, self.y)
-            self.statistic.save_snapshot(current_direction=snake_copy.current_key, #self.prev_key,
-                                         next_direction=self.key,
-                                         snake=snake_copy,
-                                         fruit=self.fruit,
-                                         x=self.x,
-                                         y=self.y)
-
-            # print("Prev:[%s] Cur:[%s] Snake.Current[%s]" % (KEYS[self.prev_key], KEYS[self.key], KEYS[snake_copy.current_key]))
+            self.statistic.save_snapshot(self.snapshot)
 
         self.prev_key = self.key
 
@@ -163,8 +197,8 @@ if __name__ == '__main__':
     fmt = QSurfaceFormat()
     fmt.setSamples(1)
     QSurfaceFormat.setDefaultFormat(fmt)
-    x = 50
-    y = 50
+    x = 30
+    y = 30
     window = SnakeGame(x, y)
     window.show()
 
