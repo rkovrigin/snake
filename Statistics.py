@@ -272,7 +272,7 @@ class Statistic(object):
 
         wall_on_my_way = Statistic._get_surroundings(np_array=np_array, current_direction=current_key, item=WALL)
         fruit_on_my_way = Statistic._get_surroundings(np_array=np_array, current_direction=current_key, item=FRUIT)
-        obstacles = wall_on_my_way #+ fruit_on_my_way
+        obstacles = wall_on_my_way + fruit_on_my_way
 
         diag = (math.sqrt(x**2 + y**2))
         obstacles.append((Statistic._calc_distance(head, fruit)) / diag)

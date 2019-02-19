@@ -16,12 +16,8 @@ def sigmoid_gradient(np_array):
 class NeuralNetwork(object):
 
     def __init__(self, output_layer_size=None, internal_layers=1, my_lambda=0, file_name="dump.txt"):
-        try:
-            statistic = Statistic(output=file_name)
-        except Exception as e:
-            print(e)
+        statistic = Statistic(output=file_name)
         self.X, self.Y, self.m = statistic.get_training_set()
-        del statistic
         self.my_lambda = my_lambda
 
         self.input_layer_size = self.X.shape[1]
@@ -34,10 +30,6 @@ class NeuralNetwork(object):
         else:
             self.internal_layers = internal_layers
 
-        # self.theta1 = np.random.rand((self.internal_layer_size, self.input_layer_size + 1))
-        # self.theta2 = np.random.rand((self.output_layer_size, self.internal_layer_size + 1))
-        # self.theta1 = np.random.rand(self.internal_layer_size, self.input_layer_size + 1)
-        # self.theta2 = np.random.rand(self.output_layer_size, self.internal_layer_size + 1)
         self.theta1 = self.randomize_weights(self.internal_layer_size, self.input_layer_size)
         self.theta2 = self.randomize_weights(self.output_layer_size, self.internal_layer_size)
         self.w1 = None
@@ -56,19 +48,16 @@ class NeuralNetwork(object):
         reg = lambda*(reg1 + reg2)/(2*m)
         J = J + reg;
         """
-        # theta1, theta2, = initial_thetas
         x, y, my_lambda, t1_shape, t2_shape = args
         theta1 = initial_thetas[0:t1_shape[0] * t1_shape[1]].reshape(t1_shape)
         theta2 = initial_thetas[t1_shape[0] * t1_shape[1]:].reshape(t2_shape)
         n = x.shape[0]
         a1 = np.hstack((np.ones((n, 1)), x))
         z2 = np.matmul(a1, np.transpose(theta1))
-        # z2 = np.matmul(a1, np.transpose(self.theta1))
         a2 = sigmoid(z2)
 
         a2 = (np.hstack((np.ones((a2.shape[0], 1)), a2)))
         z3 = np.matmul(a2, np.transpose(theta2))
-        # z3 = np.matmul(a2, np.transpose(self.theta2))
         a3 = sigmoid(z3)
         h = a3
 
@@ -79,8 +68,6 @@ class NeuralNetwork(object):
             Y[i, :] = z
 
         J = np.sum(np.log(h) * (-Y) - np.log(1 - h) * (1 - Y)) / self.m
-        # reg1 = np.sum(np.square(self.theta1[:, 1:]))
-        # reg2 = np.sum(np.square(self.theta2[:, 1:]))
         reg1 = np.sum(np.square(theta1[:, 1:]))
         reg2 = np.sum(np.square(theta2[:, 1:]))
         reg = my_lambda * (reg1 + reg2) / (2 * self.m)
@@ -112,20 +99,14 @@ class NeuralNetwork(object):
         Theta1_grad = Theta1_grad + (lambda * [zeros(size(Theta1, 1), 1), Theta1(:, 2:end)])/m; % 0 as a 1st column, because we do not update BIAS!
         Theta2_grad = Theta2_grad + (lambda * [zeros(size(Theta2, 1), 1), Theta2(:, 2:end)])/m;
         """
-        # theta1_grad = np.zeros(self.theta1.shape)
-        # theta2_grad = np.zeros(self.theta2.shape)
-        # theta1_grad, theta2_grad, = initial_thetas
-        # x, y, my_lambda = args
         x, y, my_lambda, t1_shape, t2_shape = args
         theta1_grad = initial_thetas[:t1_shape[0] * t1_shape[1]].reshape(t1_shape)
         theta2_grad = initial_thetas[t1_shape[0] * t1_shape[1]:].reshape(t2_shape)
 
         for i in range(self.m):
-            # a1, a2, a3, z2, z3 = self._calc_inner_layers(x=x[i], theta1=self.theta1, theta2=self.theta2)
             a1, a2, a3, z2, z3 = self._calc_inner_layers(x=x[i], theta1=theta1_grad, theta2=theta2_grad)
             d3 = a3 - y[i] / 4
             d2 = np.matmul(d3, theta2_grad[:, 1:]) * sigmoid_gradient(z2)
-            # d2 = np.matmul(d3, self.theta2[:, 1:]) * sigmoid_gradient(z2)
             theta1_grad = theta1_grad + np.matmul(np.transpose(d2), a1)
             theta2_grad = theta2_grad + np.matmul(np.transpose(d3), a2)
 
@@ -138,11 +119,6 @@ class NeuralNetwork(object):
         theta2_grad = theta2_grad + (my_lambda * t2_tmp) / self.m
 
         return np.hstack((theta1_grad.ravel(order='F'), theta2_grad.ravel(order='F')))
-        # a = theta1_grad.reshape((t1_shape[0] * t1_shape[1]))
-        # b = theta2_grad.reshape(t2_shape[0] * t2_shape[1])
-        # return np.concatenate((a, b))
-        # return np.asarray((theta1_grad, theta2_grad))
-        # return theta1_grad, theta2_grad
 
     def _calc_inner_layers(self, x, theta1, theta2):
         if type(x) is list:
@@ -179,7 +155,7 @@ class NeuralNetwork(object):
 
 
 def main():
-    nn = NeuralNetwork(file_name="dump_ot.txt", my_lambda=100)
+    nn = NeuralNetwork(file_name="dump_nn.txt", my_lambda=1)
     res = nn.optimize()
     plt.plot(nn.j)
     plt.show()
