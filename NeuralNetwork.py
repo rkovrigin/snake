@@ -4,6 +4,7 @@ from Statistics import Statistic
 from LogisticRegression import sigmoid
 import scipy.optimize as op
 import matplotlib.pyplot as plt
+import pandas as pd
 
 
 def sigmoid_gradient(np_array):
@@ -52,12 +53,14 @@ class NeuralNetwork(object):
         theta1 = deepcopy(initial_thetas[0:t1_shape[0] * t1_shape[1]].reshape(t1_shape))
         theta2 = deepcopy(initial_thetas[t1_shape[0] * t1_shape[1]:].reshape(t2_shape))
         n = x.shape[0]
-        a1 = np.hstack((np.ones((n, 1)), x))
-        z2 = np.matmul(a1, np.transpose(theta1))
+
+        ones = np.ones((n, 1))
+        a1 = np.hstack((ones, x))
+        z2 = a1 @ theta1.T
         a2 = sigmoid(z2)
 
-        a2 = (np.hstack((np.ones((a2.shape[0], 1)), a2)))
-        z3 = np.matmul(a2, np.transpose(theta2))
+        a2 = (np.hstack((ones, a2)))
+        z3 = a2 @ theta2.T
         a3 = sigmoid(z3)
         h = a3
 
@@ -68,70 +71,12 @@ class NeuralNetwork(object):
             Y[i, :] = z
 
         J = np.sum(np.log(h) * (-Y) - np.log(1 - h) * (1 - Y)) / self.m
-        reg1 = np.sum(np.square(theta1[:, 1:]))
-        reg2 = np.sum(np.square(theta2[:, 1:]))
+        reg1 = np.sum(np.sum(np.square(theta1[:, 1:]), axis=1))
+        reg2 = np.sum(np.sum(np.square(theta2[:, 1:]), axis=1))
         reg = my_lambda * (reg1 + reg2) / (2 * self.m)
 
         self.j.append(J + reg)
         return J + reg
-
-    def optimize_thetas_2(self, initial_thetas, *args):
-        """
-        for k=1:m
-            a1 = [1, X(k, :)];
-            z2 = a1*Theta1';
-            a2 = sigmoid(z2);
-            a2 = [1, a2];
-            z3 = a2*Theta2';
-            a3 = sigmoid(z3);
-
-            d3 = a3 .- Y(k, :);
-            d2 = d3 * Theta2(:, 2:end) .* sigmoidGradient(z2); % 1x25
-
-            Theta1_grad = Theta1_grad + d2'*a1; % 25x401
-            Theta2_grad = Theta2_grad + d3'*a2; % 10x26
-        end
-        Theta1_grad = Theta1_grad./m;
-        Theta2_grad = Theta2_grad./m;
-
-        % PART 4
-
-        Theta1_grad = Theta1_grad + (lambda * [zeros(size(Theta1, 1), 1), Theta1(:, 2:end)])/m; % 0 as a 1st column, because we do not update BIAS!
-        Theta2_grad = Theta2_grad + (lambda * [zeros(size(Theta2, 1), 1), Theta2(:, 2:end)])/m;
-        """
-        x, y, my_lambda, t1_shape, t2_shape = args
-        theta1_grad = initial_thetas[:t1_shape[0] * t1_shape[1]].reshape(t1_shape)
-        theta2_grad = initial_thetas[t1_shape[0] * t1_shape[1]:].reshape(t2_shape)
-        t1 = deepcopy(theta1_grad)
-        t2 = deepcopy(theta2_grad)
-        n = x.shape[0]
-        Y = np.zeros((n, len(set(y))))
-        for i in range(n):
-            z = np.zeros(len(set(y)))
-            z[y[i]] = 1
-            Y[i, :] = z
-
-        for i in range(self.m):
-            a1, a2, a3, z2, z3 = self._calc_inner_layers(x=x[i], theta1=theta1_grad, theta2=theta2_grad)
-            d3 = a3 - Y[i] / 4
-            d2 = np.matmul(d3, theta2_grad[:, 1:]) * sigmoid_gradient(z2)
-            theta1_grad = theta1_grad + np.matmul(np.transpose(d2), a1)
-            theta2_grad = theta2_grad + np.matmul(np.transpose(d3), a2)
-
-        # t1_tmp = theta1_grad.copy()
-        # t1_tmp[:, t1_tmp.shape[1] - 1] = np.ones(t1_tmp.shape[0])
-        # theta1_grad = theta1_grad + (my_lambda * t1_tmp) / self.m
-        #
-        # t2_tmp = theta2_grad.copy()
-        # t2_tmp[:, t2_tmp.shape[1] - 1] = np.ones(t2_tmp.shape[0])
-        # theta2_grad = theta2_grad + (my_lambda * t2_tmp) / self.m
-        t1[:, 0] = np.ones(t1.shape[0])
-        theta1_grad = theta1_grad / self.m + (my_lambda * t1) / self.m
-
-        t2[:, 0] = np.ones(t2.shape[0])
-        theta2_grad = theta2_grad / self.m + (my_lambda * t2) / self.m
-
-        return np.hstack((theta1_grad.ravel(order='F'), theta2_grad.ravel(order='F')))
 
     def optimize_thetas(self, initial_thetas, *args):
         x, y, my_lambda, t1_shape, t2_shape = args
@@ -146,18 +91,20 @@ class NeuralNetwork(object):
             z[y[i]] = 1
             Y[i, :] = z
 
-        a1 = np.hstack((np.ones((n, 1)), x))
-        z2 = np.matmul(a1, np.transpose(theta1))
+        ones = np.ones((n, 1))
+        a1 = np.hstack((ones, x))
+        z2 = a1 @ theta1.T
         a2 = sigmoid(z2)
 
-        a2 = (np.hstack((np.ones((a2.shape[0], 1)), a2)))
-        z3 = np.matmul(a2, np.transpose(theta2))
+        a2 = (np.hstack((ones, a2)))
+        z3 = a2 @ theta2.T
         a3 = sigmoid(z3)
 
-        d3 = a3 - Y / 4
-        d2 = np.matmul(d3, theta2[:, 1:]) * sigmoid_gradient(z2)
-        theta1 = theta1 + np.matmul(np.transpose(d2), a1)
-        theta2 = theta2 + np.matmul(np.transpose(d3), a2)
+        d3 = a3 - Y
+        d2 = np.multiply(d3 @ theta2[:, 1:], sigmoid_gradient(z2))
+
+        theta1 = theta1 + (d2.T @ a1)
+        theta2 = theta2 + (d3.T @ a2)
 
         theta1 = theta1 / self.m
         theta2 = theta2 / self.m
@@ -178,7 +125,7 @@ class NeuralNetwork(object):
         t2[:, 0] = np.zeros(t2.shape[0])
         theta2_grad = theta2 + (my_lambda * t2) / self.m
 
-        return np.hstack((theta1_grad.ravel(order='F'), theta2_grad.ravel(order='F')))
+        return np.hstack((theta1_grad.ravel(), theta2_grad.ravel()))
 
 
     def _calc_inner_layers(self, x, theta1, theta2):
@@ -195,8 +142,9 @@ class NeuralNetwork(object):
 
     def optimize(self):
         result = op.fmin_cg(f=self.cost_function,
-                            x0=np.hstack((self.theta1.ravel(order='F'), self.theta2.ravel(order='F'))),
-                            fprime=self.optimize_thetas_2,
+                            # x0=np.hstack((self.theta1.ravel(order='F'), self.theta2.ravel(order='F'))),
+                            x0=np.hstack((self.theta1.ravel(), self.theta2.ravel())),
+                            fprime=self.optimize_thetas,
                             args=(self.X, self.Y, self.my_lambda, self.theta1.shape, self.theta2.shape),
                             maxiter=50)
 
