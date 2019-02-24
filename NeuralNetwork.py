@@ -18,7 +18,7 @@ def sigmoid_gradient(np_array):
 
 class NeuralNetwork(object):
 
-    def __init__(self, output_layer_size=None, internal_layers=1, my_lambda=0, file_name="dump.txt"):
+    def __init__(self, my_lambda=0, file_name="dump.txt"):
         statistic = Statistic(output=file_name)
         x, y, self.m = statistic.get_training_set()
 
@@ -30,30 +30,38 @@ class NeuralNetwork(object):
 
         # reading the data
         # data = loadmat('ex4data1.mat')
-        # self.X = data['X'][0000:2000, :]
-        # self.Y = data['y'][0000:2000, :]
+        # self.X = data['X'][0:500, :]
+        # self.Y = data['y'][0:500, :]
         # self.m = len(self.Y)
         # self.output_layer_size = 10
 
         self.my_lambda = my_lambda
-
         self.input_layer_size = self.X.shape[1]
         self.internal_layer_size = 25
 
-        if not internal_layers:
-            self.internal_layers = [self.internal_layer_size]
-        else:
-            self.internal_layers = internal_layers
-
-        self.theta1 = self.randomize_weights(self.internal_layer_size, self.input_layer_size)
-        self.theta2 = self.randomize_weights(self.output_layer_size, self.internal_layer_size)
+        self.theta1 = None
+        self.theta2 = None
         self.w1 = None
         self.w2 = None
         self.j = []
+        # self._randomize_thetas()
+
+    def _randomize_thetas(self):
+        self.theta1 = self.randomize_weights(self.internal_layer_size, self.input_layer_size)
+        self.theta2 = self.randomize_weights(self.output_layer_size, self.internal_layer_size)
 
     def randomize_weights(self, l_in, l_out):
         epsilon = 0.12
         return np.random.rand(l_in, l_out + 1) * 2 * epsilon - epsilon
+        # return np.zeros((l_in, l_out + 1))
+
+    def _set_y(self, input_size, output_size, y):
+        Y = np.zeros((input_size, output_size))
+        for i in range(input_size):
+            z = np.zeros(output_size)
+            z[y[i]] = 1
+            Y[i, :] = z
+        return Y
 
     def cost_function(self, initial_thetas, *args):
         """
@@ -63,7 +71,8 @@ class NeuralNetwork(object):
         reg = lambda*(reg1 + reg2)/(2*m)
         J = J + reg;
         """
-        x, y, my_lambda, t1_shape, t2_shape = args
+        x, y, my_lambda, shapes = args
+        t1_shape, t2_shape = shapes
         theta1 = deepcopy(initial_thetas[0:t1_shape[0] * t1_shape[1]].reshape(t1_shape))
         theta2 = deepcopy(initial_thetas[t1_shape[0] * t1_shape[1]:].reshape(t2_shape))
         n = x.shape[0]
@@ -78,13 +87,7 @@ class NeuralNetwork(object):
         a3 = sigmoid(z3)
         h = a3
 
-        Y = np.zeros((n, len(set(y.flatten()))))
-        Y = np.zeros((n, self.output_layer_size))
-        for i in range(n):
-            z = np.zeros(len(set(y.flatten())))
-            z = np.zeros(self.output_layer_size)
-            z[y[i]] = 1
-            Y[i, :] = z
+        Y = self._set_y(n, self.output_layer_size, y)
 
         J = np.sum(np.log(h) * (-Y) - np.log(1 - h) * (1 - Y)) / self.m
         reg1 = np.sum(np.sum(np.square(theta1[:, 1:]), axis=1))
@@ -95,19 +98,14 @@ class NeuralNetwork(object):
         return J + reg
 
     def optimize_thetas(self, initial_thetas, *args):
-        x, y, my_lambda, t1_shape, t2_shape = args
+        x, y, my_lambda, shapes = args
+        t1_shape, t2_shape = shapes
         n = x.shape[0]
         theta1 = deepcopy(initial_thetas[:t1_shape[0] * t1_shape[1]].reshape(t1_shape))
         theta2 = deepcopy(initial_thetas[t1_shape[0] * t1_shape[1]:].reshape(t2_shape))
         t1 = deepcopy(theta1)
         t2 = deepcopy(theta2)
-        Y = np.zeros((n, len(set(y.flatten()))))
-        Y = np.zeros((n, self.output_layer_size))
-        for i in range(n):
-            z = np.zeros(len(set(y.flatten())))
-            z = np.zeros(self.output_layer_size)
-            z[y[i]] = 1
-            Y[i, :] = z
+        Y = self._set_y(n, self.output_layer_size, y)
 
         ones = np.ones((n, 1))
         a1 = np.hstack((ones, x))
@@ -165,24 +163,29 @@ class NeuralNetwork(object):
         #                     args=(self.X, self.Y, self.my_lambda, self.theta1.shape, self.theta2.shape),
         #                     # maxiter=150
         #                     )
+        # result = op.minimize(fun=self._iterativ_cost_function,
+        #                      x0=np.hstack((self.theta1.ravel(), self.theta2.ravel())),
+        #                      jac=self._iterativ_optimize_thetas,
+        #                      args=(self.X, self.Y, self.my_lambda, (self.theta1.shape, self.theta2.shape)),
+        #                      method='TNC')
         result = op.minimize(fun=self.cost_function,
                              x0=np.hstack((self.theta1.ravel(), self.theta2.ravel())),
                              jac=self.optimize_thetas,
-                             args=(self.X, self.Y, self.my_lambda, self.theta1.shape, self.theta2.shape),
+                             args=(self.X, self.Y, self.my_lambda, (self.theta1.shape, self.theta2.shape)),
                              method='TNC')
 
         self.w1 = result.x[0:self.theta1.shape[0] * self.theta1.shape[1]].reshape(self.theta1.shape)
         self.w2 = result.x[self.theta1.shape[0] * self.theta1.shape[1]:].reshape(self.theta2.shape)
 
-        print("w1 = ", self.w1)
-        print("w2 = ", self.w2)
+        # print("w1 = ", self.w1)
+        # print("w2 = ", self.w2)
 
-        out = self.predict(self.w1, self.w2, self.X, self.Y)
-        print(self.Y)
+        out = self.predict((self.w1, self.w2), self.X, self.Y)
+        print(self.Y.flatten())
         print(out)
         print(np.mean(out == self.Y.flatten()) * 100)
-        if 1 in out or 2 in out:
-            print("CONGRATES!!!", self.my_lambda)
+        # if 1 in out or 2 in out:
+        #     print("CONGRATES!!!", self.my_lambda)
         print("Status - %s" % result['success'], "; Message - %s" % result['message'], "; Status - %s" % result['status'])
 
         return self.w1, self.w2
@@ -193,9 +196,10 @@ class NeuralNetwork(object):
         # print(a3, a3.index(max(a3)))
         return a3.index(max(a3))
 
-    def predict(self, theta1, theta2, X, y):
+    def predict(self, thetas, X, y):
         m = len(y)
         ones = np.ones((m, 1))
+        theta1, theta2 = thetas
 
         a1 = np.hstack((ones, X))
         z2 = a1 @ theta1.T
@@ -208,7 +212,8 @@ class NeuralNetwork(object):
 
 
 def main():
-    nn = NeuralNetwork(file_name="dump_nn.txt", my_lambda=90)
+    nn = NeuralNetwork(file_name="dump_nn.txt", my_lambda=1)
+    nn._randomize_thetas()
     res = nn.optimize()
     plt.plot(nn.j)
     nn.j = []
