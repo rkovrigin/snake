@@ -1,4 +1,5 @@
 from copy import deepcopy
+from random import randrange
 
 from scipy.io import loadmat
 
@@ -37,7 +38,7 @@ class NeuralNetworkPlus(NeuralNetwork):
         self.layers.insert(0, self.input_layer_size)
         self.thetas = list()
         self.j = []
-        self.w = None
+        self.weights = None
         # self._randomize_thetas()
 
     def _randomize_thetas(self):
@@ -73,7 +74,6 @@ class NeuralNetworkPlus(NeuralNetwork):
         d = [a[-1] - Y]
         for i in range(len(thetas) - 1):
             _d = np.multiply(d[-1] @ thetas[-i - 1][:, 1:], sigmoid_gradient(z[-i - 2]))
-            print(_d.shape)
             d.append(_d)
         d.reverse()
 
@@ -123,31 +123,35 @@ class NeuralNetworkPlus(NeuralNetwork):
                              method='TNC')
 
         _start_position = 0
-        self.w = []
+        self.weights = []
         for shape in [theta.shape for theta in self.thetas]:
-            self.w.append(deepcopy(result.x[_start_position: _start_position + shape[0] * shape[1]].reshape(shape)))
+            self.weights.append(deepcopy(result.x[_start_position: _start_position + shape[0] * shape[1]].reshape(shape)))
             _start_position = shape[0] * shape[1]
 
-        out = self.predict(self.w, self.X, self.Y)
-        print(self.Y.flatten())
-        print(out)
-        print(np.mean(out == self.Y.flatten()) * 100)
-        print("Status - %s" % result['success'], "; Message - %s" % result['message'], "; Status - %s" % result['status'])
+        out = self.predict_raw(self.X)
+        rate = np.mean(np.argmax(out, axis=1) == self.Y.flatten()) * 100
+        print("Status - %s" % result['success'], "; Message - %s" % result['message'], "; Status - %s" % result['status'], "; Rate = %f" % rate)
+        print(result['message'], result['success'])
 
-        return self.w[0], self.w[1]
+        return [weight for weight in self.weights]
 
-    def predict(self, thetas, X, y):
-        m = len(y)
-        ones = np.ones((m, 1))
+    def predict(self, X):
+        if isinstance(X, list):
+            X = np.array([X])
+        out = self.predict_raw(X)
+        print(out[-1], np.argmax(out[-1]), np.max(out[-1]))
+        return np.argmax(out[-1])
+
+    def predict_raw(self, X):
         a = [X]
-        z = list()
+        z = []
 
-        for i in range(len(thetas)):
-            a[i] = np.hstack((ones,  a[i]))
-            z.append(a[i] @ thetas[i].T)
+        for i in range(len(self.weights)):
+            a[i] = np.append(np.ones((a[i].shape[0], 1)), a[i], axis=1)
+            z.append(a[i] @ self.weights[i].T)
             a.append(sigmoid(z[i]))
 
-        return np.argmax(a[-1], axis=1)
+        return a[-1]
 
 
 def main():
@@ -170,8 +174,10 @@ def main():
     # plt.plot(nnp.j, 'r')
     # plt.show()
 
-    # print(nn.w1, nn.w2)
-    nnp = NeuralNetworkPlus(file_name="dump_nn.txt", my_lambda=1, layers=[25, 3])
+
+    layers = [randrange(5) for _ in range(1)]
+    layers.append(3)
+    nnp = NeuralNetworkPlus(file_name="dump_ot.txt", my_lambda=1, layers=[10, 3])
     nnp._randomize_thetas()
     nnp.optimize()
     plt.plot(nnp.j, 'r')
