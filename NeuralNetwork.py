@@ -179,7 +179,7 @@ class NeuralNetwork(object):
 
         out = self.predict_raw(self.X)
         rate = np.mean(np.argmax(out, axis=1) == self.Y.flatten()) * 100
-        print("Status - %s" % result['success'], "; Message - %s" % result['message'], "; Status - %s" % result['status'],  "Rate = %f" % rate)
+        print("Status - %s" % result['success'], "; Message - %s" % result['message'], "; Status - %s" % result['status'],  "; Rate = %f" % rate)
 
         return self.w1, self.w2
 
