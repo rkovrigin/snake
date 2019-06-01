@@ -106,7 +106,7 @@ class SnakeGame(Window):
             self.run = True
 
         if self.auto:
-            if self.key and self.ai.weights:
+            if self.key and self.ai.weights is not None:
                 np_array_map = Statistic.create_map(self.snake, self.fruit, self.x, self.y)
                 obstacles = Statistic.snapshot_prepare_data_1(np_array_map, self.snake.current_key)
                 move = self.ai.predict(obstacles)
@@ -168,8 +168,9 @@ class SnakeGame(Window):
 
 
 if __name__ == '__main__':
-    ai = NeuralNetworkPlus(file_name="dump_ot.txt", my_lambda=34, layers=[25, 3])
+    ai = NeuralNetworkPlus(file_name="dump_ot.txt", my_lambda=3, layers=[25, 3])
     # ai = NeuralNetwork(file_name="dump_ot.txt", my_lambda=3)
+    # ai = LogisticRegression(file_name="dump_ot.txt")
     ai.optimize()
 
     app = QApplication(sys.argv)

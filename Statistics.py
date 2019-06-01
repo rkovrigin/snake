@@ -1,4 +1,5 @@
 import math
+from ctypes import c_ubyte
 from math import sqrt, acos
 
 import numpy as np
@@ -262,6 +263,8 @@ class Statistic(object):
             for j in range(y):
                 if np_array[i, j] == HEAD or np_array[i, j] == BODY or np_array[i, j] == HEAD + FRUIT:
                     length += 1
+        if HEAD + FRUIT in np_array:
+            length += 1
         return length
 
     @staticmethod
@@ -277,31 +280,70 @@ class Statistic(object):
         diag = (math.sqrt(x**2 + y**2))
         obstacles.append((Statistic._calc_distance(head, fruit)) / diag)
         # obstacles.append((Statistic._calc_distance(fruit, head)) / diag)
-        obstacles.append(Statistic._calc_angle_degrees(head, fruit) / 180)
-        obstacles.append(Statistic._calc_angle_degrees(fruit, head) / 180)
+        obstacles.append((Statistic._calc_angle_degrees(head, fruit) / 180 + 1) / 4)
+        # obstacles.append((Statistic._calc_angle_degrees(fruit, head) / 180 + 1) / 4)
         # obstacles.append(math.fabs(head.x - fruit.x) / x)
         # obstacles.append(math.fabs(head.y - fruit.y) / y)
 
-        obstacles.append((head.x - fruit.x) / diag)
-        obstacles.append((head.y - fruit.y) / diag)
-        obstacles.append((fruit.x - head.x) / diag)
-        obstacles.append((fruit.y - head.y) / diag)
+        # if fruit.y == head.y and head.x == fruit.x:
+        #     print("XY", Statistic._calc_angle_degrees(head, fruit) / 180,
+        #           Statistic._calc_angle_degrees(fruit, head) / 180, )
+        # elif head.x == fruit.x:
+        #     print("X", Statistic._calc_angle_degrees(head, fruit) / 180, Statistic._calc_angle_degrees(fruit, head) / 180)
+        # elif fruit.y == head.y:
+        #     print("Y", Statistic._calc_angle_degrees(head, fruit) / 180, Statistic._calc_angle_degrees(fruit, head) / 180, )
+
+        obstacles.append((head.x - fruit.x) / x)
+        # obstacles.append((head.y - fruit.y) / y)
+        # obstacles.append((fruit.x - head.x) / x)
+        # obstacles.append((fruit.y - head.y) / y)
+        # obstacles.append((head.x) / x)
+        # obstacles.append((head.y) / y)
+        # obstacles.append((fruit.x) / x)
+        # obstacles.append((fruit.y) / y)
+        # obstacles.append(Statistic._get_snake_length(np_array))
 
         key = current_key - 16777234
         obstacles.append(key / 4)
         return obstacles
 
+    @staticmethod
+    def snapshot_prepare_data_2(np_array, current_key):
+        x, y = np_array.shape
+        head = Statistic._get_head(np_array)
+        fruit = Statistic._get_fruit(np_array)
+        out = np_array.reshape(1, x*y)[0].tolist()
+        key = current_key - 16777234
+        out.append(key / 4)
+        return out
+
     def prepare_data_1(self):
         data = self.read_snapshots()
         learning_data = list()
+        ob0 = []
+        ob1 = []
+        ob2 = []
         for snapshot in data:
             obstacles = self.snapshot_prepare_data_1(np_array=snapshot["map"], current_key=snapshot["current_direction"])
             next_direction = keys_mapping.mapping_4_to_3(snapshot["current_direction"], snapshot["next_direction"])
             obstacles.append(next_direction)
-            if next_direction is not None:
-                print(obstacles)
-                learning_data.append(obstacles)
-        return learning_data
+
+            if next_direction is None:
+                continue
+            # print(obstacles)
+
+            if next_direction == 0:
+                ob0.append(obstacles)
+            elif next_direction == 1:
+                ob1.append(obstacles)
+            elif next_direction == 2:
+                ob2.append(obstacles)
+
+            # if next_direction is not None:
+            #     print(obstacles)
+            #     learning_data.append(obstacles)
+        return ob0 + ob1 + ob2
+        # return ob0[len(ob0)-3000:] + ob1[:3000] + ob2[:3000]
 
     def get_overview(self, snake, fruit, x, y):
         head = snake.head
@@ -334,6 +376,7 @@ class Statistic(object):
         y_data = list()
 
         for training_set in self.prepare_data_1():
+            print(training_set)
             x_data.append(training_set[:-1])
             y_data.append(training_set[-1:][0])
         X = np.asarray(x_data)
@@ -350,15 +393,22 @@ def main():
     # for snapshot in data:
     #     st._print_user_friendly(snapshot["map"])
 
-    with open("dump.txt", "r") as input_file:
-        for line in input_file:
-            parsed = line.split(";")
-            x = int(parsed[0])
-            y = int(parsed[1])
-            my_map = np.array([int(i) for i in parsed[2].strip("[]").split(', ')]).reshape((x, y))
-            st._print_user_friendly(my_map)
-            print('\n\n')
+    # with open("dump.txt", "r") as input_file:
+    #     for line in input_file:
+    #         parsed = line.split(";")
+    #         x = int(parsed[0])
+    #         y = int(parsed[1])
+    #         my_map = np.array([int(i) for i in parsed[2].strip("[]").split(', ')]).reshape((x, y))
+    #         st._print_user_friendly(my_map)
+    #         print('\n\n')
 
+    d = {}
+    for i in st.prepare_data_1():
+        if i[-1] not in d.keys():
+            d[i[-1]] = 1
+        else:
+            d[i[-1]] += 1
+    print(d)
 
 if __name__ == "__main__":
     main()

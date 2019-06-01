@@ -15,13 +15,13 @@ class LogisticRegression(object):
     def __init__(self, class_range=3, file_name="", my_lambda=1):
         self.X = None
         self.Y = None
-        self.theta = None
+        self.weights = None
         self.class_range = class_range
         self.my_lambda = my_lambda
         self.cost_data = [[], [], []]
         self.stat = Statistic(output=file_name)
         self.X, self.Y, self.m = self.stat.get_training_set()
-        self.theta = np.zeros([self.class_range, self.X.shape[1]])
+        self.weights = np.zeros([self.class_range, self.X.shape[1]])
 
     def cost_function(self, initial_theta, X, y, i):
         zero_theta = initial_theta.copy()
@@ -41,8 +41,8 @@ class LogisticRegression(object):
         grad = (np.matmul(np.transpose(X), sig - y) + reg) / self.m
         return grad
 
-    def optimize(self, index):
-        initial_theta = np.zeros(len(self.theta[index]))
+    def optimize_one(self, index):
+        initial_theta = np.zeros(len(self.weights[index]))
         y = self.Y == index
         y = y.astype(int)
         result = op.minimize(fun=self.cost_function,
@@ -53,16 +53,16 @@ class LogisticRegression(object):
         print(result)
         return result.x
 
-    def optimize_thetas(self):
+    def optimize(self):
         t = list()
         for i in range(self.class_range):
-            t.append(self.optimize(i))
+            t.append(self.optimize_one(i))
 
-        self.theta = np.asarray(t)
-        return self.theta
+        self.weights = np.asarray(t)
+        return self.weights
 
     def predict(self, x):
-        w = np.matmul(self.theta, x).tolist()
+        w = np.matmul(self.weights, x).tolist()
         print(w, w.index(max(w)))
         return w.index(max(w))
 
@@ -74,11 +74,11 @@ def main():
     ls = [0]
     for l, color in zip(ls, colors):
         lr.my_lambda = l
-        lr.theta = np.zeros([lr.class_range, lr.X.shape[1]])
+        lr.weights = np.zeros([lr.class_range, lr.X.shape[1]])
         lr.cost_data[0].clear()
         lr.cost_data[1].clear()
         lr.cost_data[2].clear()
-        lr.optimize_thetas()
+        lr.optimize()
         plt.plot(lr.cost_data[0], "k")
         plt.plot(lr.cost_data[1], "b")
         plt.plot(lr.cost_data[2], "r")
