@@ -10,7 +10,6 @@ import pandas as pd
 
 
 def sigmoid_gradient(np_array):
-    # g = np.zeros(np_array.shape)
     sg = sigmoid(np_array)
     g = sg * (1 - sg)
     return g
@@ -43,6 +42,7 @@ class NeuralNetwork(object):
         self.theta2 = None
         self.w1 = None
         self.w2 = None
+        self.weights = None
         self.j = []
         # self._randomize_thetas()
 
@@ -53,7 +53,6 @@ class NeuralNetwork(object):
     def randomize_weights(self, l_in, l_out):
         epsilon = 0.12
         return np.random.rand(l_in, l_out + 1) * 2 * epsilon - epsilon
-        # return np.zeros((l_in, l_out + 1))
 
     def _set_y(self, input_size, output_size, y):
         Y = np.zeros((input_size, output_size))
@@ -176,49 +175,40 @@ class NeuralNetwork(object):
 
         self.w1 = result.x[0:self.theta1.shape[0] * self.theta1.shape[1]].reshape(self.theta1.shape)
         self.w2 = result.x[self.theta1.shape[0] * self.theta1.shape[1]:].reshape(self.theta2.shape)
+        self.weights = [self.w1, self.w2]
 
-        # print("w1 = ", self.w1)
-        # print("w2 = ", self.w2)
-
-        out = self.predict((self.w1, self.w2), self.X, self.Y)
-        print(self.Y.flatten())
-        print(out)
-        print(np.mean(out == self.Y.flatten()) * 100)
-        # if 1 in out or 2 in out:
-        #     print("CONGRATES!!!", self.my_lambda)
-        print("Status - %s" % result['success'], "; Message - %s" % result['message'], "; Status - %s" % result['status'])
+        out = self.predict_raw(self.X)
+        rate = np.mean(np.argmax(out, axis=1) == self.Y.flatten()) * 100
+        print("Status - %s" % result['success'], "; Message - %s" % result['message'], "; Status - %s" % result['status'],  "Rate = %f" % rate)
 
         return self.w1, self.w2
 
-    def predict_(self, layer_1_input, theta1, theta2):
-        a1, a2, a3, z2, z3 = self._calc_inner_layers(x=layer_1_input, theta1=theta1, theta2=theta2)
-        a3 = a3.tolist()[0]
-        # print(a3, a3.index(max(a3)))
-        return a3.index(max(a3))
+    def predict_raw(self, X):
+        theta1, theta2 = self.w1, self.w2
 
-    def predict(self, thetas, X, y):
-        m = len(y)
-        ones = np.ones((m, 1))
-        theta1, theta2 = thetas
-
-        a1 = np.hstack((ones, X))
+        a1 = np.append(np.ones((X.shape[0], 1)), X, axis=1)
         z2 = a1 @ theta1.T
         a2 = sigmoid(z2)
-        a2 = (np.hstack((ones, a2)))
+        a2 = np.append(np.ones((a2.shape[0], 1)), a2, axis=1)
         z3 = a2 @ theta2.T
         a3 = sigmoid(z3)
 
-        return np.argmax(a3, axis=1)
+        return a3
+
+    def predict(self, X):
+        if isinstance(X, list):
+            X = np.array([X])
+        out = self.predict_raw(X)
+        print(out[-1], np.argmax(out[-1]))
+        return np.argmax(out[-1])
 
 
 def main():
-    nn = NeuralNetwork(file_name="dump_nn.txt", my_lambda=1)
+    nn = NeuralNetwork(file_name="dump_ot.txt", my_lambda=1)
     nn._randomize_thetas()
     res = nn.optimize()
     plt.plot(nn.j)
     nn.j = []
-
-    # print(nn.w1, nn.w2)
 
 
 if __name__ == "__main__":
