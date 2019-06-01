@@ -2,7 +2,7 @@ import sys
 import time
 from copy import deepcopy
 from itertools import cycle
-from random import randrange
+import random
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QBrush, QColor, QPainter, QSurfaceFormat
@@ -11,10 +11,11 @@ from PyQt5.QtWidgets import QApplication, QGridLayout, QLabel, QOpenGLWidget, QW
 import keys_mapping
 from LogisticRegression import LogisticRegression
 from NeuralNetwork import NeuralNetwork
+from NeuralNetworkPlus import NeuralNetworkPlus
 from Snake import Snake, Cell
 from Statistics import Statistic
 
-DEFAULT_TIMER = 100
+DEFAULT_TIMER = 200
 
 
 class GLWidget(QOpenGLWidget):
@@ -72,7 +73,7 @@ class Window(QWidget):
 
 
 class SnakeGame(Window):
-    def __init__(self, x, y, scale=10):
+    def __init__(self, x, y, ai=None, auto=False, scale=10):
         self.snake = Snake(x//2, y//2)
         self.fruit = None
         super(SnakeGame, self).__init__(x, y, scale)
@@ -81,51 +82,20 @@ class SnakeGame(Window):
         self.key = None
         self.prev_key = None
         self.prev_fruit = None
-
-        self.auto = True
-
-        if self.auto:
-            try:
-                self.ai = NeuralNetwork(file_name="dump_nn.txt", my_lambda=3)
-                self.ai.w1, self.ai.w2 = self.ai.optimize()
-                # self.ai = LogisticRegression(file_name="dump_nn.txt", my_lambda=1)
-                t1, t2 = self.ai.optimize_thetas()
-            except Exception as e:
-                print(e)
-        else:
-            self.statistic = Statistic()
-
-        self.fruit_list = list()
-        for i in range(1, self.x-1, 2):
-            for j in range(1, self.y-1, 2):
-                self.fruit_list.append(Cell(j, i))
-        for i in range(1, self.x-1, 2):
-            for j in range(1, self.y-1, 2):
-                self.fruit_list.append(Cell(i, j))
-
-        self.fruit_reverse = deepcopy(self.fruit_list)
-        self.fruit_reverse.reverse()
-        self.fruits = cycle(self.fruit_reverse + self.fruit_list)
+        self.ai = ai
+        self.auto = auto
+        self.statistic = Statistic()
         self.set_fruit()
-
         self.snapshot = None
 
     def keyPressEvent(self, event):
         if not self.auto and self.fruit is not None:
             self.key = event.key()
 
-    def set_fruit_(self):
-        self.fruit = None
-        while not self.fruit:
-            f = next(self.fruits)
-            if f not in self.snake:
-                self.fruit = Cell(f.x, f.y)
-                break
-
     def set_fruit(self):
         self.fruit = None
         while not self.fruit:
-            self.fruit = Cell(randrange(0, self.x), randrange(0, self.y))
+            self.fruit = Cell(random.randrange(0, self.x), random.randrange(0, self.y))
             for cell in self.snake:
                 if cell.x == self.fruit.x and cell.y == self.fruit.y:
                     self.fruit = None
@@ -136,13 +106,13 @@ class SnakeGame(Window):
             self.run = True
 
         if self.auto:
-            if self.key:
+            if self.key and self.ai.weights:
                 np_array_map = Statistic.create_map(self.snake, self.fruit, self.x, self.y)
                 obstacles = Statistic.snapshot_prepare_data_1(np_array_map, self.snake.current_key)
-                move = self.ai.predict(obstacles, self.ai.w1, self.ai.w2)
+                move = self.ai.predict(obstacles)
                 self.key = keys_mapping.mapping_3_to_4(next_move=move, current_key=self.key, previous_key=self.prev_key)
             else:
-                self.key = Qt.Key_Left
+                self.key = random.choice((Qt.Key_Right, Qt.Key_Left, Qt.Key_Up, Qt.Key_Down))
 
         if self.prev_fruit:
             self.snapshot = Statistic.create_snapshot(
@@ -198,6 +168,10 @@ class SnakeGame(Window):
 
 
 if __name__ == '__main__':
+    ai = NeuralNetworkPlus(file_name="dump_ot.txt", my_lambda=34, layers=[25, 3])
+    # ai = NeuralNetwork(file_name="dump_ot.txt", my_lambda=3)
+    ai._randomize_thetas()
+    ai.optimize()
 
     app = QApplication(sys.argv)
 
@@ -206,7 +180,7 @@ if __name__ == '__main__':
     QSurfaceFormat.setDefaultFormat(fmt)
     x = 30
     y = 30
-    window = SnakeGame(x, y)
+    window = SnakeGame(x, y, ai, auto=True)
     window.show()
 
     sys.exit(app.exec_())
