@@ -15,9 +15,24 @@ def sigmoid_gradient(np_array):
     return g
 
 
-class NeuralNetwork(object):
+class NeuralNetworkParent(object):
+    def randomize_weights(self, l_in, l_out):
+        epsilon = 0.12
+        return np.random.rand(l_in, l_out + 1) * 2 * epsilon - epsilon
+
+    def _set_y(self, input_size, output_size, y):
+        Y = np.zeros((input_size, output_size))
+        for i in range(input_size):
+            z = np.zeros(output_size)
+            z[y[i]] = 1
+            Y[i, :] = z
+        return Y
+
+
+class NeuralNetwork(NeuralNetworkParent):
 
     def __init__(self, my_lambda=0, file_name="dump.txt"):
+        super().__init__()
         statistic = Statistic(output=file_name)
         x, y, self.m = statistic.get_training_set()
 
@@ -44,23 +59,11 @@ class NeuralNetwork(object):
         self.w2 = None
         self.weights = None
         self.j = []
-        # self._randomize_thetas()
+        self._randomize_thetas()
 
     def _randomize_thetas(self):
         self.theta1 = self.randomize_weights(self.internal_layer_size, self.input_layer_size)
         self.theta2 = self.randomize_weights(self.output_layer_size, self.internal_layer_size)
-
-    def randomize_weights(self, l_in, l_out):
-        epsilon = 0.12
-        return np.random.rand(l_in, l_out + 1) * 2 * epsilon - epsilon
-
-    def _set_y(self, input_size, output_size, y):
-        Y = np.zeros((input_size, output_size))
-        for i in range(input_size):
-            z = np.zeros(output_size)
-            z[y[i]] = 1
-            Y[i, :] = z
-        return Y
 
     def cost_function(self, initial_thetas, *args):
         """
@@ -205,7 +208,6 @@ class NeuralNetwork(object):
 
 def main():
     nn = NeuralNetwork(file_name="dump_ot.txt", my_lambda=1)
-    nn._randomize_thetas()
     res = nn.optimize()
     plt.plot(nn.j)
     nn.j = []

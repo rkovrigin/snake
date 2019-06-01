@@ -4,20 +4,20 @@ from random import randrange
 from scipy.io import loadmat
 
 from LogisticRegression import sigmoid
-from NeuralNetwork import NeuralNetwork, sigmoid_gradient
+from NeuralNetwork import NeuralNetworkParent, sigmoid_gradient
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.optimize as op
 from Statistics import Statistic
 
 
-class NeuralNetworkPlus(NeuralNetwork):
+class NeuralNetworkPlus(NeuralNetworkParent):
 
-    def __init__(self, my_lambda=0, file_name="dump.txt", layers=[25, 3]):
-        super().__init__(my_lambda, file_name)
+    def __init__(self, my_lambda=0, file_name="dump.txt", layers=(25, 3)):
+        super().__init__()
         statistic = Statistic(output=file_name)
         x, y, self.m = statistic.get_training_set()
-        self.layers = layers
+        self.layers = list(layers)
 
         self.X = x[:, :]
         self.Y = y[:]
@@ -39,11 +39,11 @@ class NeuralNetworkPlus(NeuralNetwork):
         self.thetas = list()
         self.j = []
         self.weights = None
-        # self._randomize_thetas()
+        self._randomize_thetas()
 
     def _randomize_thetas(self):
         for i in range(len(self.layers) - 1):
-            self.thetas.append(self.randomize_weights(self.layers[i+1], self.layers[i]))
+            self.thetas.append(self.randomize_weights(self.layers[i + 1], self.layers[i]))
 
     def ravel(self, thetas):
         ret = []
@@ -178,7 +178,6 @@ def main():
     layers = [randrange(5) for _ in range(1)]
     layers.append(3)
     nnp = NeuralNetworkPlus(file_name="dump_ot.txt", my_lambda=1, layers=[10, 3])
-    nnp._randomize_thetas()
     nnp.optimize()
     plt.plot(nnp.j, 'r')
     plt.show()
