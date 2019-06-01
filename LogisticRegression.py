@@ -12,24 +12,16 @@ def sigmoid(matrix):
 
 class LogisticRegression(object):
 
-    def __init__(self, file_name="", my_lambda=1):
+    def __init__(self, class_range=3, file_name="", my_lambda=1):
         self.X = None
         self.Y = None
         self.theta = None
-        self.classes = 3
+        self.class_range = class_range
         self.my_lambda = my_lambda
         self.cost_data = [[], [], []]
         self.stat = Statistic(output=file_name)
-
-        x_data = list()
-        y_data = list()
-        for snapshot in self.stat.prepare_data_1():
-            x_data.append(snapshot[:-1])
-            y_data.append(snapshot[-1:][0])
-        self.X = np.asarray(x_data)
-        self.Y = np.asarray(y_data)
-        self.theta = np.zeros([self.classes, len(x_data[0])])
-        self.m = len(y_data)
+        self.X, self.Y, self.m = self.stat.get_training_set()
+        self.theta = np.zeros([self.class_range, self.X.shape[1]])
 
     def cost_function(self, initial_theta, X, y, i):
         zero_theta = initial_theta.copy()
@@ -63,7 +55,7 @@ class LogisticRegression(object):
 
     def optimize_thetas(self):
         t = list()
-        for i in range(self.classes):
+        for i in range(self.class_range):
             t.append(self.optimize(i))
 
         self.theta = np.asarray(t)
@@ -76,13 +68,13 @@ class LogisticRegression(object):
 
 
 def main():
-    lr = LogisticRegression(file_name="dump.txt", my_lambda=0)
+    lr = LogisticRegression(file_name="dump_ot.txt", my_lambda=0)
     # print(lr.optimize_thetas())
     colors = ['b', 'g', 'r', 'c', 'm', 'y', 'k', 'w']
     ls = [0]
     for l, color in zip(ls, colors):
         lr.my_lambda = l
-        lr.theta = np.zeros([lr.classes, lr.X.shape[1]])
+        lr.theta = np.zeros([lr.class_range, lr.X.shape[1]])
         lr.cost_data[0].clear()
         lr.cost_data[1].clear()
         lr.cost_data[2].clear()
