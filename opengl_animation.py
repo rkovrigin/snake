@@ -170,7 +170,6 @@ class SnakeGame(Window):
 if __name__ == '__main__':
     ai = NeuralNetworkPlus(file_name="dump_ot.txt", my_lambda=34, layers=[25, 3])
     # ai = NeuralNetwork(file_name="dump_ot.txt", my_lambda=3)
-    ai._randomize_thetas()
     ai.optimize()
 
     app = QApplication(sys.argv)
