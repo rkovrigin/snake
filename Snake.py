@@ -29,7 +29,7 @@ class Snake(object):
     def __init__(self, x, y, start_length=2):
         self.body = list()
         self.body.append(Cell(x, y))
-        self.grow_from_fruit = start_length - 1 +10
+        self.grow_from_fruit = start_length - 1
         self.current_key = None
 
     def __iter__(self):
