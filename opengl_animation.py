@@ -104,8 +104,9 @@ class ShowSavedDate(Window):
         self.openGL.animate(self.cells)
         self.key = None
 
+
 class SnakeGame(Window):
-    def __init__(self, x, y, ai=None, auto=False, scale=10):
+    def __init__(self, x, y, ai=None, scale=10):
         self.snake = Snake(x//2, y//2)
         self.fruit = None
         super(SnakeGame, self).__init__(x, y, scale)
@@ -115,19 +116,16 @@ class SnakeGame(Window):
         self.prev_key = None
         self.prev_fruit = None
         self.ai = ai
-        self.auto = auto
         self.statistic = Statistic()
         self.set_fruit()
         self.snapshot = None
         self.timer_delta = 0
 
     def keyPressEvent(self, event):
-        if not self.auto and self.fruit is not None:
+        if not self.ai and self.fruit is not None:
             self.key = event.key()
 
     def set_fruit(self):
-        self.fruit = Cell(3, 0)
-        return
         self.fruit = None
         while not self.fruit:
             self.fruit = Cell(random.randrange(0, self.x), random.randrange(0, self.y))
@@ -140,7 +138,7 @@ class SnakeGame(Window):
         if not self.run and self.key:
             self.run = True
 
-        if self.auto:
+        if self.ai:
             if self.key and self.ai.weights is not None:
                 np_array_map = Statistic.create_map(self.snake, self.fruit, self.x, self.y)
                 obstacles = Statistic.snapshot_prepare_data_1(np_array_map, self.snake.current_key)
@@ -192,7 +190,7 @@ class SnakeGame(Window):
             self.timer = max(DEFAULT_TIMER, self.timer - self.timer_delta)
             self.timer_id = self.startTimer(self.timer)
 
-        if self.run and not self.auto:
+        if self.run and not self.ai:
             self.statistic.save_snapshot(self.snapshot)
 
         self.prev_key = self.key
@@ -216,7 +214,7 @@ if __name__ == '__main__':
     QSurfaceFormat.setDefaultFormat(fmt)
     x = 10
     y = 10
-    window = SnakeGame(x, y, ai=None, auto=False)
+    window = SnakeGame(x, y, ai=None, scale=25)
     # window = ShowSavedDate()
     window.show()
 
