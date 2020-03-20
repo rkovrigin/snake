@@ -13,7 +13,8 @@ from LogisticRegression import LogisticRegression
 from NeuralNetwork import NeuralNetwork
 from NeuralNetworkPlus import NeuralNetworkPlus
 from Snake import Snake, Cell
-from Statistics import Statistic
+from Statistics import Statistic, KEYS
+import numpy as np
 
 DEFAULT_TIMER = 200
 
@@ -72,6 +73,37 @@ class Window(QWidget):
         self.timer_id = self.startTimer(self.timer)
 
 
+class ShowSavedDate(Window):
+    def __init__(self, x=50, y=50, scale=10):
+        super(ShowSavedDate, self).__init__(x, y, scale)
+        self.statistic = Statistic()
+        self.snapshots = self.statistic.read_snapshots(file="dump.txt")
+        self.snapshot_generator = self.all_snapshots()
+        self.key = None
+        self.cells = []
+
+    def all_snapshots(self):
+        for snapshot in self.snapshots:
+            yield snapshot
+
+    def keyPressEvent(self, event):
+        self.key = event.key()
+
+    def timerEvent(self, event):
+        if self.key == Qt.Key_Space:
+            snapshot = next(self.snapshot_generator)
+            self.cells = []
+            for i in range(snapshot['x']):
+                for j in range(snapshot['y']):
+                    if snapshot['map'][i][j] == 1 or snapshot['map'][i][j] == 2:
+                        self.cells.append((i, j, Qt.green))
+                    elif snapshot['map'][i][j] == 4:
+                        self.cells.append((i, j, Qt.red))
+            self.setWindowTitle("Current %s, Next %s" % (KEYS[snapshot['current_direction']], KEYS[snapshot['next_direction']]))
+
+        self.openGL.animate(self.cells)
+        self.key = None
+
 class SnakeGame(Window):
     def __init__(self, x, y, ai=None, auto=False, scale=10):
         self.snake = Snake(x//2, y//2)
@@ -87,12 +119,15 @@ class SnakeGame(Window):
         self.statistic = Statistic()
         self.set_fruit()
         self.snapshot = None
+        self.timer_delta = 0
 
     def keyPressEvent(self, event):
         if not self.auto and self.fruit is not None:
             self.key = event.key()
 
     def set_fruit(self):
+        self.fruit = Cell(3, 0)
+        return
         self.fruit = None
         while not self.fruit:
             self.fruit = Cell(random.randrange(0, self.x), random.randrange(0, self.y))
@@ -154,7 +189,7 @@ class SnakeGame(Window):
             self.prev_fruit = deepcopy(self.fruit)
             self.set_fruit()
             self.killTimer(self.timer_id)
-            self.timer = max(150, self.timer - 10)
+            self.timer = max(DEFAULT_TIMER, self.timer - self.timer_delta)
             self.timer_id = self.startTimer(self.timer)
 
         if self.run and not self.auto:
@@ -168,19 +203,21 @@ class SnakeGame(Window):
 
 
 if __name__ == '__main__':
-    ai = NeuralNetworkPlus(file_name="dump_ot.txt", my_lambda=3, layers=[25, 3])
+    # ai = NeuralNetworkPlus(file_name="dump.txt", my_lambda=0.001, layers=[10, 10])
     # ai = NeuralNetwork(file_name="dump_ot.txt", my_lambda=3)
-    # ai = LogisticRegression(file_name="dump_ot.txt")
-    ai.optimize()
+    # ai = LogisticRegression(file_name="dump.txt")
+    # ai.optimize()
+    # ai = None
 
     app = QApplication(sys.argv)
 
     fmt = QSurfaceFormat()
     fmt.setSamples(1)
     QSurfaceFormat.setDefaultFormat(fmt)
-    x = 30
-    y = 30
-    window = SnakeGame(x, y, ai, auto=True)
+    x = 10
+    y = 10
+    window = SnakeGame(x, y, ai=None, auto=False)
+    # window = ShowSavedDate()
     window.show()
 
     sys.exit(app.exec_())
