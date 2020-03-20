@@ -16,6 +16,11 @@ KEYS = {
     None: "None"
 }
 
+KEY_RIGHT = Qt.Key_Right
+KEY_LEFT = Qt.Key_Left
+KEY_UP = Qt.Key_Up
+KEY_DOWN = Qt.Key_Down
+
 EMPTY = 0
 BODY = 1
 HEAD = 2
@@ -268,6 +273,52 @@ class Statistic(object):
         return length
 
     @staticmethod
+    def angle_with_apple(head, fruit):
+        fruit_direction_vector = np.array([fruit.x, fruit.y]) - np.array([head.x, head.y])
+        snake_direction_vector = np.array([head.x, head.y]) - np.array([fruit.x, fruit.y])
+
+        norm_of_fruit_direction_vector = np.linalg.norm(fruit_direction_vector)
+        norm_of_snake_direction_vector = np.linalg.norm(snake_direction_vector)
+
+        if norm_of_fruit_direction_vector == 0:
+            norm_of_fruit_direction_vector = 10
+        if norm_of_snake_direction_vector == 0:
+            norm_of_snake_direction_vector = 10
+
+        apple_direction_vector_normalized = fruit_direction_vector / norm_of_fruit_direction_vector
+        snake_direction_vector_normalized = snake_direction_vector / norm_of_snake_direction_vector
+
+        angle = math.atan2(apple_direction_vector_normalized[1] * snake_direction_vector_normalized[0] -
+                           apple_direction_vector_normalized[0] * snake_direction_vector_normalized[1],
+                           apple_direction_vector_normalized[1] * snake_direction_vector_normalized[1] +
+                           apple_direction_vector_normalized[0] * snake_direction_vector_normalized[0]) / math.pi
+        return angle
+
+    """
+    def angle_with_apple(snake_position, apple_position):
+    apple_direction_vector = np.array(apple_position)-np.array(snake_position[0])
+    snake_direction_vector = np.array(snake_position[0])-np.array(snake_position[1])
+
+    norm_of_apple_direction_vector = np.linalg.norm(apple_direction_vector)
+    norm_of_snake_direction_vector = np.linalg.norm(snake_direction_vector)
+    if norm_of_apple_direction_vector == 0:
+        norm_of_apple_direction_vector = 10
+    if norm_of_snake_direction_vector == 0:
+        norm_of_snake_direction_vector = 10
+
+    apple_direction_vector_normalized = apple_direction_vector/norm_of_apple_direction_vector
+    snake_direction_vector_normalized = snake_direction_vector/norm_of_snake_direction_vector
+    angle = math.atan2(apple_direction_vector_normalized[1] * snake_direction_vector_normalized[0] - apple_direction_vector_normalized[0] * snake_direction_vector_normalized[1], apple_direction_vector_normalized[1] * snake_direction_vector_normalized[1] + apple_direction_vector_normalized[0] * snake_direction_vector_normalized[0]) / math.pi
+    return angle
+    """
+
+    @staticmethod
+    def angle(cell_a, cell_b):
+        y = cell_a.y - cell_b.y
+        x = cell_a.x - cell_b.x
+        return ((math.atan2(y, x) / math.pi) + 1) / 2
+
+    @staticmethod
     def snapshot_prepare_data_1(np_array, current_key):
         x, y = np_array.shape
         head = Statistic._get_head(np_array)
@@ -275,36 +326,30 @@ class Statistic(object):
 
         wall_on_my_way = Statistic._get_surroundings(np_array=np_array, current_direction=current_key, item=WALL)
         fruit_on_my_way = Statistic._get_surroundings(np_array=np_array, current_direction=current_key, item=FRUIT)
-        obstacles = wall_on_my_way + fruit_on_my_way
+        obstacles = wall_on_my_way #+ fruit_on_my_way
 
         diag = (math.sqrt(x**2 + y**2))
-        obstacles.append((Statistic._calc_distance(head, fruit)) / diag)
+
+        # obstacles.append(Statistic.angle_with_apple(head, fruit))
+        # obstacles.append(Statistic.angle_with_apple(fruit, head))
+        obstacles.append(Statistic.angle(head, fruit))
+        obstacles.append(Statistic.angle(fruit, head))
+        # obstacles.append((Statistic._calc_distance(head, fruit)) / diag)
         # obstacles.append((Statistic._calc_distance(fruit, head)) / diag)
-        obstacles.append((Statistic._calc_angle_degrees(head, fruit) / 180 + 1) / 4)
-        # obstacles.append((Statistic._calc_angle_degrees(fruit, head) / 180 + 1) / 4)
-        # obstacles.append(math.fabs(head.x - fruit.x) / x)
-        # obstacles.append(math.fabs(head.y - fruit.y) / y)
-
-        # if fruit.y == head.y and head.x == fruit.x:
-        #     print("XY", Statistic._calc_angle_degrees(head, fruit) / 180,
-        #           Statistic._calc_angle_degrees(fruit, head) / 180, )
-        # elif head.x == fruit.x:
-        #     print("X", Statistic._calc_angle_degrees(head, fruit) / 180, Statistic._calc_angle_degrees(fruit, head) / 180)
-        # elif fruit.y == head.y:
-        #     print("Y", Statistic._calc_angle_degrees(head, fruit) / 180, Statistic._calc_angle_degrees(fruit, head) / 180, )
-
-        obstacles.append((head.x - fruit.x) / x)
-        # obstacles.append((head.y - fruit.y) / y)
-        # obstacles.append((fruit.x - head.x) / x)
-        # obstacles.append((fruit.y - head.y) / y)
-        # obstacles.append((head.x) / x)
-        # obstacles.append((head.y) / y)
-        # obstacles.append((fruit.x) / x)
-        # obstacles.append((fruit.y) / y)
-        # obstacles.append(Statistic._get_snake_length(np_array))
 
         key = current_key - 16777234
         obstacles.append(key / 4)
+
+        if current_key == KEY_LEFT:
+            obstacles.append(0)
+        elif current_key == KEY_RIGHT:
+            obstacles.append(1)
+
+        if current_key == KEY_UP:
+            obstacles.append(1)
+        elif current_key == KEY_DOWN:
+            obstacles.append(0)
+
         return obstacles
 
     @staticmethod
@@ -319,7 +364,6 @@ class Statistic(object):
 
     def prepare_data_1(self):
         data = self.read_snapshots()
-        learning_data = list()
         ob0 = []
         ob1 = []
         ob2 = []
@@ -339,11 +383,7 @@ class Statistic(object):
             elif next_direction == 2:
                 ob2.append(obstacles)
 
-            # if next_direction is not None:
-            #     print(obstacles)
-            #     learning_data.append(obstacles)
         return ob0 + ob1 + ob2
-        # return ob0[len(ob0)-3000:] + ob1[:3000] + ob2[:3000]
 
     def get_overview(self, snake, fruit, x, y):
         head = snake.head
@@ -376,7 +416,7 @@ class Statistic(object):
         y_data = list()
 
         for training_set in self.prepare_data_1():
-            print(training_set)
+            # print(training_set)
             x_data.append(training_set[:-1])
             y_data.append(training_set[-1:][0])
         X = np.asarray(x_data)
