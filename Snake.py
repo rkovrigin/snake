@@ -1,17 +1,21 @@
 # from curses import KEY_RIGHT, KEY_LEFT, KEY_UP, KEY_DOWN
 from PyQt5.QtCore import Qt
 
-KEY_RIGHT = Qt.Key_Right
-KEY_LEFT = Qt.Key_Left
-KEY_UP = Qt.Key_Up
-KEY_DOWN = Qt.Key_Down
-
 
 class Cell(object):
 
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+    def __add__(self, other):
+        return Cell(self.x + other.x, self.y + other.y)
+
+    def __sub__(self, other):
+        return Cell(self.x - other.x, self.y - other.y)
+
+    def __mul__(self, other):
+        return Cell(self.x * other.x, self.y * other.y)
 
     def __eq__(self, other):
         return self.x == other.x and self.y == other.y
@@ -72,13 +76,13 @@ class Snake(object):
         return False
 
     def move(self, key=None):
-        if key not in [KEY_DOWN, KEY_UP, KEY_LEFT, KEY_RIGHT] and not self.current_key:
+        if key not in [Qt.Key_Down, Qt.Key_Up, Qt.Key_Left, Qt.Key_Right] and not self.current_key:
             return
 
-        if key == KEY_UP and self.current_key != KEY_DOWN or \
-                key == KEY_DOWN and self.current_key != KEY_UP or \
-                key == KEY_LEFT and self.current_key != KEY_RIGHT or \
-                key == KEY_RIGHT and self.current_key != KEY_LEFT:
+        if key == Qt.Key_Up and self.current_key != Qt.Key_Down or \
+                key == Qt.Key_Down and self.current_key != Qt.Key_Up or \
+                key == Qt.Key_Left and self.current_key != Qt.Key_Right or \
+                key == Qt.Key_Right and self.current_key != Qt.Key_Left:
             self.current_key = key
 
         new_head = Cell(self.head.x, self.head.y)
@@ -88,13 +92,13 @@ class Snake(object):
         else:
             self.grow_from_fruit -= 1
 
-        if self.current_key == KEY_RIGHT:
+        if self.current_key == Qt.Key_Right:
             new_head.x += 1
-        elif self.current_key == KEY_LEFT:
+        elif self.current_key == Qt.Key_Left:
             new_head.x -= 1
-        elif self.current_key == KEY_UP:
+        elif self.current_key == Qt.Key_Up:
             new_head.y -= 1
-        elif self.current_key == KEY_DOWN:
+        elif self.current_key == Qt.Key_Down:
             new_head.y += 1
 
         self.body.append(new_head)
