@@ -29,7 +29,7 @@ class Snake(object):
     def __init__(self, x, y, start_length=2):
         self.body = list()
         self.body.append(Cell(x, y))
-        self.grow_from_fruit = start_length - 1
+        self.grow_from_fruit = start_length - 1 +10
         self.current_key = None
 
     def __iter__(self):
@@ -49,7 +49,7 @@ class Snake(object):
 
     @property
     def head(self):
-        return self.body[len(self.body)-1]
+        return self.body[0]
 
     def eat_fruit(self):
         self.grow_from_fruit += 1
@@ -63,9 +63,8 @@ class Snake(object):
         if self.head.y < 0 or self.head.y >= Y:
             return True
 
-        for i in range(len(self.body)-2):
-            if self.head.x == self.body[i].x and self.head.y == self.body[i].y:
-                return True
+        if self.head in self.body[3:]:
+            return True
 
         return False
 
@@ -88,7 +87,7 @@ class Snake(object):
         new_head = Cell(self.head.x, self.head.y)
 
         if self.grow_from_fruit == 0:
-            self.body.pop(0)
+            self.body.pop()
         else:
             self.grow_from_fruit -= 1
 
@@ -101,4 +100,4 @@ class Snake(object):
         elif self.current_key == Qt.Key_Down:
             new_head.y += 1
 
-        self.body.append(new_head)
+        self.body.insert(0, new_head)
