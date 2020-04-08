@@ -202,9 +202,9 @@ class SnakeGame(Window):
 
 
 if __name__ == '__main__':
-    # ai = NeuralNetworkPlus(file_name="dump.txt", my_lambda=1, layers=[25, 3])
-    # ai = NeuralNetwork(file_name="d.txt", my_lambda=0.1)
-    ai = LogisticRegression(file_name="d.txt", my_lambda=0.1)
+    # ai = NeuralNetworkPlus(file_name="dump.txt", my_lambda=1, layers=[75, 3])
+    ai = NeuralNetwork(file_name="d.txt", my_lambda=0.5)
+    # ai = LogisticRegression(file_name="d.txt", my_lambda=0.1)
     ai.optimize()
     # ai = None
 
