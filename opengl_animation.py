@@ -16,7 +16,7 @@ from Snake import Snake, Cell
 from Statistics import Statistic, KEYS
 import numpy as np
 
-DEFAULT_TIMER = 200
+DEFAULT_TIMER = 5
 
 
 class GLWidget(QOpenGLWidget):
@@ -174,6 +174,7 @@ class SnakeGame(Window):
             self.key = None
             self.prev_key = None
             self.setWindowTitle("Game over")
+            print("---GAME OVER---")
 
             time.sleep(2)
 
@@ -201,10 +202,10 @@ class SnakeGame(Window):
 
 
 if __name__ == '__main__':
-    # ai = NeuralNetworkPlus(file_name="dump.txt", my_lambda=0.001, layers=[10, 10])
-    # ai = NeuralNetwork(file_name="dump_ot.txt", my_lambda=3)
-    # ai = LogisticRegression(file_name="dump.txt")
-    # ai.optimize()
+    # ai = NeuralNetworkPlus(file_name="dump.txt", my_lambda=1, layers=[25, 3])
+    # ai = NeuralNetwork(file_name="d.txt", my_lambda=0.1)
+    ai = LogisticRegression(file_name="d.txt", my_lambda=0.1)
+    ai.optimize()
     # ai = None
 
     app = QApplication(sys.argv)
@@ -212,9 +213,9 @@ if __name__ == '__main__':
     fmt = QSurfaceFormat()
     fmt.setSamples(1)
     QSurfaceFormat.setDefaultFormat(fmt)
-    x = 10
-    y = 10
-    window = SnakeGame(x, y, ai=None, scale=25)
+    x = 100
+    y = 100
+    window = SnakeGame(x, y, ai=ai, scale=8)
     # window = ShowSavedDate()
     window.show()
 

@@ -51,7 +51,7 @@ class NeuralNetwork(NeuralNetworkParent):
 
         self.my_lambda = my_lambda
         self.input_layer_size = self.X.shape[1]
-        self.internal_layer_size = 25
+        self.internal_layer_size = 75
 
         self.theta1 = None
         self.theta2 = None

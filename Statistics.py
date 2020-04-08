@@ -34,13 +34,6 @@ LEFT = 1
 RIGHT = 2
 
 
-class Snapshot(object):
-    def __init__(self, my_map, cd, pd):
-        self.cur_direction = cd
-        self.prev_direction = pd
-        self.my_map = my_map
-
-
 class Statistic(object):
 
     def __init__(self, view_range=10, output="dump.txt"):
@@ -86,29 +79,6 @@ class Statistic(object):
         else:
             return FORWARD
 
-    def snapshot(self, prev_key, snake, fruit, x, y):
-        head = snake.head
-        snapshot = list()
-        for i in range(head.x - self.view_range // 2, (head.x + self.view_range // 2) + 1):
-            for j in range(head.y - self.view_range // 2, (head.y + self.view_range // 2) + 1):
-                if i < 0 or i >= x:
-                    snapshot.append(WALL)
-                elif j < 0 or j >= y:
-                    snapshot.append(WALL)
-                elif Cell(i, j) in snake:
-                    snapshot.append(BODY)
-                elif Cell(i, j) == fruit:
-                    snapshot.append(FRUIT)
-                else:
-                    snapshot.append(EMPTY)
-
-        snapshot.append(len(snake))
-        direction = Statistic.get_direction(prev_key, snake)
-        if direction is not None:
-            snapshot.append(direction)
-            # print(snapshot)
-            self.data.append(snapshot)
-
     @staticmethod
     def create_map(snake, fruit, x, y):
         my_map = np.zeros([x, y], dtype=int)
@@ -150,7 +120,7 @@ class Statistic(object):
         self.file.write(snapshot)
         self.file.flush()
 
-    def read_snapshots(self, file=None, x=None, y=None):
+    def read_snapshots(self, file=None):
         if not file:
             file = self.output
 
@@ -196,13 +166,6 @@ class Statistic(object):
         return fruit
 
     @staticmethod
-    def _get_obsacle(np_array, x, y):
-        X, Y = np_array.shape
-        if x < 0 or x >= X or y < 0 or y >= Y:
-            return WALL
-        return np_array[x, y]
-
-    @staticmethod
     def _is_element_on_my_way(np_array, x, y, item=WALL):
         _x, _y = np_array.shape
         if x < 0 or x >= _x or y < 0 or y >= _y:
@@ -242,21 +205,6 @@ class Statistic(object):
         return obstacle
 
     @staticmethod
-    def _calc_distance(head, fruit):
-        return sqrt((head.x - fruit.x)**2 + (head.y - fruit.y)**2)
-
-    @staticmethod
-    def _calc_angle_rad(head, fruit):
-        return math.atan2(head.y - fruit.y, head.x - fruit.x)
-
-    @staticmethod
-    def _calc_angle_degrees(head, fruit):
-        angle = math.degrees(Statistic._calc_angle_rad(head, fruit))
-        # if angle < 0:
-        #     angle += 360
-        return angle
-
-    @staticmethod
     def _print_user_friendly(np_array):
         print(np.rot90(np.flip(np_array, 1)))
 
@@ -271,28 +219,6 @@ class Statistic(object):
         if HEAD + FRUIT in np_array:
             length += 1
         return length
-
-    @staticmethod
-    def angle_with_apple(head, fruit):
-        fruit_direction_vector = np.array([fruit.x, fruit.y]) - np.array([head.x, head.y])
-        snake_direction_vector = np.array([head.x, head.y]) - np.array([fruit.x, fruit.y])
-
-        norm_of_fruit_direction_vector = np.linalg.norm(fruit_direction_vector)
-        norm_of_snake_direction_vector = np.linalg.norm(snake_direction_vector)
-
-        if norm_of_fruit_direction_vector == 0:
-            norm_of_fruit_direction_vector = 10
-        if norm_of_snake_direction_vector == 0:
-            norm_of_snake_direction_vector = 10
-
-        apple_direction_vector_normalized = fruit_direction_vector / norm_of_fruit_direction_vector
-        snake_direction_vector_normalized = snake_direction_vector / norm_of_snake_direction_vector
-
-        angle = math.atan2(apple_direction_vector_normalized[1] * snake_direction_vector_normalized[0] -
-                           apple_direction_vector_normalized[0] * snake_direction_vector_normalized[1],
-                           apple_direction_vector_normalized[1] * snake_direction_vector_normalized[1] +
-                           apple_direction_vector_normalized[0] * snake_direction_vector_normalized[0]) / math.pi
-        return angle
 
     """
     def angle_with_apple(snake_position, apple_position):
@@ -316,7 +242,46 @@ class Statistic(object):
     def angle(cell_a, cell_b):
         y = cell_a.y - cell_b.y
         x = cell_a.x - cell_b.x
-        return ((math.atan2(y, x) / math.pi) + 1) / 2
+        x1, x2 = cell_a.x, cell_b.x
+        y1, y2 = cell_a.y, cell_b.y
+
+        top = x1*x2 + y1*y2
+        bot = (sqrt(x1**2 + y2**2) * sqrt(x2**2 + y2**2))
+        cos = (top / bot) if bot > 0 else 0
+        print("COS=", cos)
+        return math.acos(cos if cos <= 1 else 1) / 180.0
+        # return cos / 180.0
+        # return ((math.atan2(y, x) / math.pi) + 1) / 2
+
+    @staticmethod
+    def angle_with_apple(snake_position, apple_position, currect_key):
+        apple_direction_vector = np.array([apple_position.x, apple_position.y]) - np.array([snake_position.x, snake_position.y])
+        if currect_key == Qt.Key_Left:
+            snake_direction_vector = np.array([snake_position.x, snake_position.y]) - np.array([snake_position.x + 1, snake_position.y])
+        elif currect_key == Qt.Key_Right:
+            snake_direction_vector = np.array([snake_position.x, snake_position.y]) - np.array([snake_position.x - 1, snake_position.y])
+        elif currect_key == Qt.Key_Up:
+            snake_direction_vector = np.array([snake_position.x, snake_position.y]) - np.array([snake_position.x, snake_position.y + 1])
+        elif currect_key == Qt.Key_Down:
+            snake_direction_vector = np.array([snake_position.x, snake_position.y]) - np.array([snake_position.x, snake_position.y - 1])
+
+        norm_of_apple_direction_vector = np.linalg.norm(apple_direction_vector)
+        norm_of_snake_direction_vector = np.linalg.norm(snake_direction_vector)
+        if norm_of_apple_direction_vector == 0:
+            norm_of_apple_direction_vector = 10
+        if norm_of_snake_direction_vector == 0:
+            norm_of_snake_direction_vector = 10
+
+        apple_direction_vector_normalized = apple_direction_vector / norm_of_apple_direction_vector
+        snake_direction_vector_normalized = snake_direction_vector / norm_of_snake_direction_vector
+        angle = math.atan2(
+            apple_direction_vector_normalized[1] * snake_direction_vector_normalized[0] -
+            apple_direction_vector_normalized[
+                0] * snake_direction_vector_normalized[1],
+            apple_direction_vector_normalized[1] * snake_direction_vector_normalized[1] +
+            apple_direction_vector_normalized[
+                0] * snake_direction_vector_normalized[0]) / math.pi
+        return angle, snake_direction_vector, apple_direction_vector_normalized, snake_direction_vector_normalized
 
     @staticmethod
     def snapshot_prepare_data_1(np_array, current_key):
@@ -325,31 +290,15 @@ class Statistic(object):
         fruit = Statistic._get_fruit(np_array)
 
         wall_on_my_way = Statistic._get_surroundings(np_array=np_array, current_direction=current_key, item=WALL)
-        fruit_on_my_way = Statistic._get_surroundings(np_array=np_array, current_direction=current_key, item=FRUIT)
-        obstacles = wall_on_my_way #+ fruit_on_my_way
+        obstacles = wall_on_my_way
 
-        diag = (math.sqrt(x**2 + y**2))
+        a = Statistic.angle_with_apple(head, fruit, current_key)
+        obstacles.append(a[0])
+        obstacles += list(a[1])
+        obstacles += list(a[2])
+        obstacles += list(a[3])
 
-        # obstacles.append(Statistic.angle_with_apple(head, fruit))
-        # obstacles.append(Statistic.angle_with_apple(fruit, head))
-        obstacles.append(Statistic.angle(head, fruit))
-        obstacles.append(Statistic.angle(fruit, head))
-        # obstacles.append((Statistic._calc_distance(head, fruit)) / diag)
-        # obstacles.append((Statistic._calc_distance(fruit, head)) / diag)
-
-        key = current_key - 16777234
-        obstacles.append(key / 4)
-
-        if current_key == KEY_LEFT:
-            obstacles.append(0)
-        elif current_key == KEY_RIGHT:
-            obstacles.append(1)
-
-        if current_key == KEY_UP:
-            obstacles.append(1)
-        elif current_key == KEY_DOWN:
-            obstacles.append(0)
-
+        print(obstacles)
         return obstacles
 
     @staticmethod

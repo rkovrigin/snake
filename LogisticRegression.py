@@ -12,7 +12,7 @@ def sigmoid(matrix):
 
 class LogisticRegression(object):
 
-    def __init__(self, class_range=3, file_name="", my_lambda=1):
+    def __init__(self, class_range=3, file_name="", my_lambda=10):
         self.X = None
         self.Y = None
         self.weights = None
